@@ -1,0 +1,4 @@
+2025-10-17T12:37:38-05:00 [INFO] (codacy-cli-v2/cli-v2.go:27) Starting Codacy CLI version=1.0.0-main.359.sha.fd2d067 (fd2d067) built at 2025-10-17T08:46:35Z
+2025-10-17T12:37:38-05:00 [INFO] (codacy-cli-v2/cmd/root.go:34) Executing CLI command command=codacy-cli full_command=[/home/mikel/.cache/codacy/codacy-cli-v2/1.0.0-main.359.sha.fd2d067/codacy-cli-v2] args=[]
+2025-10-17T12:38:39-05:00 [INFO] (codacy-cli-v2/cli-v2.go:27) Starting Codacy CLI version=1.0.0-main.359.sha.fd2d067 (fd2d067) built at 2025-10-17T08:46:35Z
+2025-10-17T12:38:39-05:00 [INFO] (codacy-cli-v2/cmd/root.go:34) Executing CLI command full_command=[/home/mikel/.cache/codacy/codacy-cli-v2/1.0.0-main.359.sha.fd2d067/codacy-cli-v2] args=[] command=codacy-cli
