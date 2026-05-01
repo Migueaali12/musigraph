@@ -126,7 +126,7 @@ Sugerencias de contribución:
 
 ## Licencia
 
-Este proyecto aún no incluye un archivo de licencia. Si quieres que sea un proyecto open source “completo”, una buena siguiente mejora es añadir `LICENSE` (por ejemplo MIT o Apache-2.0).
+Este proyecto está licenciado bajo la [MIT License](./LICENSE).
 
 ---
 
