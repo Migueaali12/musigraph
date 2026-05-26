@@ -1,13 +1,20 @@
 import type { Metadata } from "next"
-import { Space_Mono } from "next/font/google"
+import { Inter, Space_Mono } from "next/font/google"
 import "@/app/globals.css"
 import { getDictionary, type Locale } from "@/dictionaries/getDictionary"
 import { ThemeProvider } from "@/components/common/ThemeProvider"
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+})
 
 const spaceMono = Space_Mono({
   variable: "--font-space-mono",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: "swap",
 })
 
 interface LayoutProps {
@@ -15,6 +22,10 @@ interface LayoutProps {
   params: Promise<{
     lang: string
   }>
+}
+
+export function generateStaticParams() {
+  return [{ lang: 'en' }, { lang: 'es' }]
 }
 
 export async function generateMetadata({ params }: Omit<LayoutProps, "children">): Promise<Metadata> {
@@ -38,7 +49,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
 
   return (
     <html lang={lang} suppressHydrationWarning>
-      <body className={`${spaceMono.className} ${spaceMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${spaceMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
         </ThemeProvider>

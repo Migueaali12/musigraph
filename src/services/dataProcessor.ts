@@ -17,7 +17,7 @@ interface NetworkNode {
   id: string
   label: string
   type: "artist" | "album" | "genre"
-  data: any
+  data: ArtistInfo | AlbumInfo | Record<string, unknown>
 }
 
 interface NetworkEdge {
@@ -306,18 +306,16 @@ class DataProcessor {
     allArtists: ArtistInfo[],
     limit: number = 10
   ): ArtistInfo[] {
-    return allArtists
+    const artistsWithSimilarity = allArtists
       .filter((artist) => artist.id !== targetArtist.id)
       .map((artist) => ({
-        ...artist,
+        artist,
         similarity: this.calculateSimilarity(targetArtist, artist),
       }))
-      .sort((a, b) => (b as any).similarity - (a as any).similarity)
+      .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit)
-      .map((artist) => {
-        const { similarity, ...artistData } = artist as any
-        return artistData
-      })
+    
+    return artistsWithSimilarity.map(({ artist }) => artist)
   }
 }
 

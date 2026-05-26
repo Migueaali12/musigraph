@@ -1,5 +1,3 @@
-import { WIKIDATA_ENTITIES } from "./constants"
-
 // Base prefixes for all queries
 const BASE_PREFIXES = `
   PREFIX wd: <http://www.wikidata.org/entity/>
