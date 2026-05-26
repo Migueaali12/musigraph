@@ -5,12 +5,14 @@ import { type ArtistInfo } from "@/services/sparqlService"
 import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import Image from "next/image"
 import { Lightbulb, MapPin, Calendar, Music } from "lucide-react"
+import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface SearchResultsProps {
   results: ArtistInfo[]
   isLoading: boolean
   searchTerm: string
   onArtistSelect: (artist: ArtistInfo) => void
+  dict: Dictionary
 }
 
 export function SearchResults({
@@ -18,6 +20,7 @@ export function SearchResults({
   isLoading,
   searchTerm,
   onArtistSelect,
+  dict,
 }: SearchResultsProps) {
   if (isLoading) {
     return (
@@ -25,7 +28,7 @@ export function SearchResults({
         <div className='inline-flex items-center gap-3'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-coral-vibrant'></div>
           <span className='text-foreground text-lg'>
-            Buscando en el universo musical...
+            {dict.results.searchingUniverse}
           </span>
         </div>
       </div>
@@ -35,7 +38,7 @@ export function SearchResults({
   if (!searchTerm) {
     return (
       <div className='text-center py-12'>
-        <WelcomeMessage />
+        <WelcomeMessage dict={dict} />
         <div className='mb-8'>
           <div className='w-24 h-24 mx-auto mb-4 bg-gradient-energy rounded-full flex items-center justify-center'>
             <svg
@@ -53,11 +56,10 @@ export function SearchResults({
             </svg>
           </div>
           <h3 className='text-2xl font-bold text-foreground mb-2'>
-            Descubre el Universo Musical
+            {dict.results.discoverUniverse}
           </h3>
           <p className='text-muted max-w-md mx-auto'>
-            Busca cualquier artista, banda o compositor para explorar sus
-            conexiones musicales, influencias y colaboraciones.
+            {dict.results.discoverDescription}
           </p>
         </div>
       </div>
@@ -84,36 +86,36 @@ export function SearchResults({
             </svg>
           </div>
           <h3 className='text-xl font-bold text-foreground mb-2'>
-            No encontramos resultados para &ldquo;{searchTerm}&rdquo;
+            {dict.results.noResults.replace("{searchTerm}", searchTerm)}
           </h3>
           <p className='text-muted max-w-md mx-auto mb-6'>
-            Intenta con un nombre diferente o revisa la ortografía. También
-            puedes usar términos en inglés.
+            {dict.results.noResultsDescription}
           </p>
           <div className='space-y-2 text-sm text-muted'>
             <p className="flex items-center justify-center gap-1">
-              <Lightbulb className="w-4 h-4" /> <strong>Sugerencias:</strong>
+              <Lightbulb className="w-4 h-4" /> <strong>{dict.results.suggestions}</strong>
             </p>
-            <p>
-              • Intenta con &ldquo;The Beatles&rdquo; en lugar de
-              &ldquo;Beatles&rdquo;
-            </p>
-            <p>• Usa nombres completos: &ldquo;Michael Jackson&rdquo;</p>
-            <p>• Prueba términos en inglés para mejores resultados</p>
+            <p>• {dict.results.suggestion1}</p>
+            <p>• {dict.results.suggestion2}</p>
+            <p>• {dict.results.suggestion3}</p>
           </div>
         </div>
       </div>
     )
   }
 
+  const artistCountText = results.length === 1
+    ? dict.results.foundArtistsOne
+    : dict.results.foundArtistsMany.replace("{count}", String(results.length))
+
   return (
     <div>
       <div className='mb-6'>
         <h2 className='text-2xl font-bold text-foreground mb-2'>
-          Resultados para &ldquo;{searchTerm}&rdquo;
+          {dict.results.resultsFor.replace("{searchTerm}", searchTerm)}
         </h2>
         <p className='text-muted'>
-          Encontrados {results.length} artista{results.length !== 1 ? "s" : ""}
+          {artistCountText}
         </p>
       </div>
 
@@ -123,6 +125,7 @@ export function SearchResults({
             key={artist.id}
             artist={artist}
             onClick={() => onArtistSelect(artist)}
+            dict={dict}
           />
         ))}
       </div>
@@ -133,9 +136,10 @@ export function SearchResults({
 interface ArtistCardProps {
   artist: ArtistInfo
   onClick: () => void
+  dict: Dictionary
 }
 
-function ArtistCard({ artist, onClick }: ArtistCardProps) {
+function ArtistCard({ artist, onClick, dict }: ArtistCardProps) {
   const [imageError, setImageError] = useState(false)
 
   const handleImageError = () => {
@@ -147,7 +151,6 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
       onClick={onClick}
       className='bg-surface border border-border rounded-2xl p-6 hover:border-coral-vibrant/50 hover:shadow-md transition-all duration-300 cursor-pointer group'
     >
-      {/* Imagen del artista */}
       <div className='relative w-24 h-24 mx-auto mb-4'>
         {artist.image && !imageError ? (
           <Image
@@ -178,25 +181,21 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
         )}
       </div>
 
-      {/* Información del artista */}
       <div className='text-center'>
         <h3 className='text-lg font-semibold text-foreground mb-2 group-hover:text-coral-vibrant transition-colors'>
           {artist.name}
         </h3>
 
-        {/* País */}
         {artist.country && (
           <p className='text-sm text-muted mb-2 flex items-center justify-center gap-1'><MapPin className="w-4 h-4" /> {artist.country}</p>
         )}
 
-        {/* Fecha */}
         {artist.birthDate && (
           <p className='text-sm text-muted mb-3 flex items-center justify-center gap-1'>
             <Calendar className="w-4 h-4" /> {new Date(artist.birthDate).getFullYear()}
           </p>
         )}
 
-        {/* Géneros */}
         {artist.genres.length > 0 && (
           <div className='mb-3'>
             <div className='flex flex-wrap justify-center gap-1'>
@@ -217,7 +216,6 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
           </div>
         )}
 
-        {/* Instrumentos */}
         {artist.instruments.length > 0 && (
           <div className='text-xs text-muted flex items-center justify-center gap-1'>
             <Music className="w-4 h-4" /> {artist.instruments.slice(0, 2).join(", ")}
@@ -226,9 +224,8 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
         )}
       </div>
 
-      {/* Indicador de clic */}
       <div className='text-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity'>
-        <span className='text-xs text-coral-vibrant'>Clic para explorar →</span>
+        <span className='text-xs text-coral-vibrant'>{dict.results.clickToExplore}</span>
       </div>
     </div>
   )

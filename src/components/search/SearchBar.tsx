@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { WIKIDATA_ENTITIES } from "@/utils/constants"
 import { Search, SlidersHorizontal } from "lucide-react"
+import type { Dictionary } from "@/dictionaries/getDictionary"
 
 export interface SearchFilters {
   genre?: string
@@ -14,9 +15,10 @@ export interface SearchFilters {
 interface SearchBarProps {
   onSearch: (term: string, filters: SearchFilters) => void
   isLoading: boolean
+  dict: Dictionary
 }
 
-export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
+export function SearchBar({ onSearch, isLoading, dict }: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({})
@@ -42,7 +44,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
     { id: WIKIDATA_ENTITIES.JAZZ, label: "Jazz" },
     { id: WIKIDATA_ENTITIES.POP, label: "Pop" },
     { id: WIKIDATA_ENTITIES.HIP_HOP, label: "Hip Hop" },
-    { id: WIKIDATA_ENTITIES.ELECTRONIC, label: "Electrónica" },
+    { id: WIKIDATA_ENTITIES.ELECTRONIC, label: dict.search.electronic },
     { id: WIKIDATA_ENTITIES.BLUES, label: "Blues" },
   ]
 
@@ -67,7 +69,6 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
 
   return (
     <div className='w-full max-w-4xl mx-auto'>
-      {/* Campo de búsqueda principal */}
       <form onSubmit={handleSubmit} className='mb-6'>
         <div className='relative'>
           <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
@@ -77,7 +78,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
             type='text'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder='Buscar artista, banda o compositor...'
+            placeholder={dict.search.placeholder}
             className='w-full pl-12 pr-36 py-4 bg-surface border border-border rounded-2xl text-foreground placeholder-muted text-lg focus:outline-none focus:ring-2 focus:ring-coral-vibrant focus:border-transparent transition-all shadow-sm'
             disabled={isLoading}
           />
@@ -89,7 +90,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
               disabled={isLoading}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              Filtros
+              {dict.search.filters}
             </button>
             <button
               type='submit'
@@ -99,23 +100,21 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
               }
               className='mr-2 px-6 py-2 bg-gradient-energy text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 text-sm'
             >
-              {isLoading ? "Buscando..." : "Buscar"}
+              {isLoading ? dict.search.searching : dict.search.search}
             </button>
           </div>
         </div>
       </form>
 
-      {/* Filtros avanzados */}
       {showFilters && (
         <div className='bg-surface border border-border rounded-2xl p-6 mb-6 shadow-sm'>
           <h3 className='text-foreground text-lg font-semibold mb-4'>
-            Filtros Avanzados
+            {dict.search.advancedFilters}
           </h3>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-            {/* Género */}
             <div>
               <label className='block text-sm font-medium text-muted-foreground mb-2'>
-                Género Musical
+                {dict.search.genre}
               </label>
               <select
                 value={filters.genre || ""}
@@ -128,7 +127,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                 }}
                 className='w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
               >
-                <option value=''>Todos los géneros</option>
+                <option value=''>{dict.search.allGenres}</option>
                 {genres.map((genre) => (
                   <option key={genre.id} value={genre.id}>
                     {genre.label}
@@ -137,10 +136,9 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
               </select>
             </div>
 
-            {/* Década */}
             <div>
               <label className='block text-sm font-medium text-muted-foreground mb-2'>
-                Década
+                {dict.search.decade}
               </label>
               <select
                 value={filters.decade || ""}
@@ -153,7 +151,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                 }}
                 className='w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
               >
-                <option value=''>Todas las décadas</option>
+                <option value=''>{dict.search.allDecades}</option>
                 {decades.map((decade) => (
                   <option key={decade.value} value={decade.value}>
                     {decade.label}
@@ -162,10 +160,9 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
               </select>
             </div>
 
-            {/* Tipo de artista */}
             <div>
               <label className='block text-sm font-medium text-muted-foreground mb-2'>
-                Tipo de Artista
+                {dict.search.artistType}
               </label>
               <select
                 value={filters.artistType || ""}
@@ -179,14 +176,13 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                 }}
                 className='w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
               >
-                <option value=''>Todos los tipos</option>
-                <option value='solo'>Solista</option>
-                <option value='band'>Banda</option>
-                <option value='composer'>Compositor</option>
+                <option value=''>{dict.search.allTypes}</option>
+                <option value='solo'>{dict.search.solo}</option>
+                <option value='band'>{dict.search.band}</option>
+                <option value='composer'>{dict.search.composer}</option>
               </select>
             </div>
 
-            {/* Botón limpiar filtros */}
             <div className='flex items-end'>
               <button
                 type='button'
@@ -196,16 +192,15 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                 }}
                 className='w-full px-4 py-2 bg-surface-elevated border border-border text-foreground rounded-lg hover:bg-border transition-colors'
               >
-                Limpiar Filtros
+                {dict.search.clearFilters}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Búsquedas rápidas */}
       <div className='text-center'>
-        <p className='text-muted-foreground text-sm mb-3'>Búsquedas populares:</p>
+        <p className='text-muted-foreground text-sm mb-3'>{dict.search.popularSearches}</p>
         <div className='flex flex-wrap justify-center gap-2'>
           {quickSearchTerms.map((term) => (
             <button

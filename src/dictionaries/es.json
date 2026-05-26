@@ -1,0 +1,110 @@
+{
+  "home": {
+    "title": "Explora el Universo Musical",
+    "subtitle": "Descubre relaciones entre artistas, géneros musicales, influencias y colaboraciones a través de datos semánticos conectados.",
+    "endpoint": "Endpoint:",
+    "tests": "Tests",
+    "providedBy": "Datos proporcionados por",
+    "footerText": "MusiGraph - Explorador Musical Semántico"
+  },
+  "metadata": {
+    "title": "MusiGraph - Explorador Musical Semántico",
+    "description": "Explora el universo musical a través de datos semánticos conectados. Descubre relaciones entre artistas, géneros y colaboraciones musicales."
+  },
+  "search": {
+    "placeholder": "Buscar artista, banda o compositor...",
+    "filters": "Filtros",
+    "searching": "Buscando...",
+    "search": "Buscar",
+    "advancedFilters": "Filtros Avanzados",
+    "genre": "Género Musical",
+    "decade": "Década",
+    "artistType": "Tipo de Artista",
+    "clearFilters": "Limpiar Filtros",
+    "popularSearches": "Búsquedas populares:",
+    "allGenres": "Todos los géneros",
+    "allDecades": "Todas las décadas",
+    "allTypes": "Todos los tipos",
+    "solo": "Solista",
+    "band": "Banda",
+    "composer": "Compositor",
+    "electronic": "Electrónica"
+  },
+  "results": {
+    "searchingUniverse": "Buscando en el universo musical...",
+    "discoverUniverse": "Descubre el Universo Musical",
+    "discoverDescription": "Busca cualquier artista, banda o compositor para explorar sus conexiones musicales, influencias y colaboraciones.",
+    "noResults": "No encontramos resultados para \"{searchTerm}\"",
+    "noResultsDescription": "Intenta con un nombre diferente o revisa la ortografía. También puedes usar términos en inglés.",
+    "suggestions": "Sugerencias:",
+    "suggestion1": "Intenta con \"The Beatles\" en lugar de \"Beatles\"",
+    "suggestion2": "Usa nombres completos: \"Michael Jackson\"",
+    "suggestion3": "Prueba términos en inglés para mejores resultados",
+    "resultsFor": "Resultados para \"{searchTerm}\"",
+    "foundArtists": "{count} artista{plural}",
+    "foundArtistsOne": "1 artista",
+    "foundArtistsMany": "{count} artistas",
+    "clickToExplore": "Clic para explorar →"
+  },
+  "artist": {
+    "dataSource": "Fuente de datos:",
+    "backToSearch": "Volver a búsqueda",
+    "country": "País:",
+    "year": "Año:",
+    "instruments": "Instrumentos:",
+    "albums": "Álbumes:",
+    "influences": "Influencias:",
+    "collaborations": "Colaboraciones:",
+    "musicalGenres": "Géneros Musicales",
+    "overview": "Resumen",
+    "discography": "Discografía",
+    "influencesTab": "Influencias",
+    "collaborationsTab": "Colaboraciones",
+    "loadingInfo": "Cargando información del artista...",
+    "overviewTitle": "Resumen General",
+    "overviewDescription": "Explora la carrera musical de {name},{country}{activeSince}{genres}",
+    "overviewDescriptionCountry": " originario de {country},",
+    "overviewDescriptionActive": " activo desde {year}.",
+    "overviewDescriptionGenres": " Conocido principalmente por su trabajo en {genres}.",
+    "statAlbums": "Álbumes",
+    "statInfluences": "Influencias",
+    "statCollaborations": "Colaboraciones",
+    "noDiscography": "Sin discografía disponible",
+    "noDiscographyDesc": "No encontramos álbumes registrados para este artista en Wikidata.",
+    "noInfluences": "Sin influencias registradas",
+    "noInfluencesDesc": "No encontramos información sobre las influencias de este artista en Wikidata.",
+    "noCollaborations": "Sin colaboraciones registradas",
+    "noCollaborationsDesc": "No encontramos colaboraciones registradas para este artista en Wikidata.",
+    "with": "Con {artist}"
+  },
+  "header": {
+    "endpoint": "Endpoint:",
+    "language": "Idioma",
+    "en": "EN",
+    "es": "ES"
+  },
+  "welcome": {
+    "title": "¡Bienvenido al Universo Musical Conectado!",
+    "description": "Descubre las conexiones ocultas entre tus artistas favoritos. Explora influencias, colaboraciones y la rica historia musical a través de datos semánticos en tiempo real.",
+    "trySearch": "Prueba buscar alguno de estos artistas:",
+    "realTimeData": "Datos en tiempo real desde Wikidata",
+    "smartSearch": "Búsquedas inteligentes con filtros avanzados",
+    "interactiveViz": "Visualizaciones interactivas de conexiones musicales"
+  },
+  "stats": {
+    "exploreArtists": "Explorar Artistas",
+    "exploreDescription": "Busca información detallada de cualquier artista o banda musical",
+    "discography": "Discografía",
+    "discographyDescription": "Descubre las influencias musicales y conexiones entre artistas",
+    "semanticData": "Datos Semánticos",
+    "semanticDescription": "Información estructurada desde Wikidata en tiempo real"
+  },
+  "error": {
+    "somethingWrong": "Algo salió mal",
+    "unexpected": "Error inesperado",
+    "tryAgain": "Intentar de nuevo"
+  },
+  "loading": {
+    "default": "Cargando..."
+  }
+}
