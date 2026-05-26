@@ -39,18 +39,22 @@ class DataProcessor {
     influences: ArtistInfo[],
     collaborations: CollaborationInfo[]
   ): ProcessedArtistData {
+    const sortedDiscography = this.sortAlbumsByDate(discography)
+    const sortedInfluences = this.sortArtistsByInfluence(influences)
+    const sortedCollaborations = this.sortCollaborationsByDate(collaborations)
+
     const statistics = this.calculateArtistStatistics(
       artist,
-      discography,
+      sortedDiscography,
       influences,
       collaborations
     )
 
     return {
       basic: artist,
-      discography: this.sortAlbumsByDate(discography),
-      influences: this.sortArtistsByInfluence(influences),
-      collaborations: this.sortCollaborationsByDate(collaborations),
+      discography: sortedDiscography,
+      influences: sortedInfluences,
+      collaborations: sortedCollaborations,
       statistics,
     }
   }
@@ -76,7 +80,16 @@ class DataProcessor {
   }
 
   private sortAlbumsByDate(albums: AlbumInfo[]): AlbumInfo[] {
-    return albums.sort((a, b) => {
+    // Deduplicate by id first so the same Wikidata entity never appears twice
+    const seen = new Map<string, AlbumInfo>()
+    for (const album of albums) {
+      const key = album.id || album.title
+      if (!seen.has(key)) {
+        seen.set(key, album)
+      }
+    }
+
+    return Array.from(seen.values()).sort((a, b) => {
       const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0
       const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0
       return dateB - dateA // Most recent first

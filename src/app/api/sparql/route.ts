@@ -1,5 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+// Allow up to 30 s for outbound SPARQL calls (Vercel / Next.js serverless)
+export const maxDuration = 30
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface SparqlBinding {
@@ -34,21 +37,90 @@ async function executeSparqlQuery(
   query: string,
   endpoint: string = WIKIDATA_ENDPOINT
 ): Promise<SparqlResponse> {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/sparql-query",
-      Accept: "application/sparql-results+json",
-      "User-Agent": "MusiGraph/1.0 (https://musigraph.app)",
-    },
-    body: query,
-  })
+  // Abort after 25 s so we return a clean error before Next.js hard-kills the function
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 25_000)
+  const start = Date.now()
 
-  if (!response.ok) {
-    throw new Error(`SPARQL query failed: ${response.statusText}`)
+  const endpointLabel = endpoint.includes("dbpedia") ? "DBpedia" : "Wikidata"
+  const queryPreview = query.replace(/\s+/g, " ").trim().slice(0, 120)
+  console.log(`[SPARQL] → ${endpointLabel} | query: ${queryPreview}…`)
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/sparql-query",
+        Accept: "application/sparql-results+json",
+        "User-Agent": "MusiGraph/1.0 (https://musigraph.app)",
+      },
+      body: query,
+      signal: controller.signal,
+    })
+
+    const elapsed = Date.now() - start
+
+    if (!response.ok) {
+      console.error(`[SPARQL] ✗ ${endpointLabel} HTTP ${response.status} ${response.statusText} (${elapsed} ms)`)
+      throw new Error(`SPARQL query failed: ${response.statusText}`)
+    }
+
+    const data = (await response.json()) as SparqlResponse
+    const count = data.results?.bindings?.length ?? 0
+    console.log(`[SPARQL] ✓ ${endpointLabel} | ${count} result(s) | ${elapsed} ms`)
+    return data
+  } catch (err) {
+    const elapsed = Date.now() - start
+    if (err instanceof Error && err.name === "AbortError") {
+      console.error(`[SPARQL] ✗ ${endpointLabel} | TIMEOUT after ${elapsed} ms`)
+      throw new Error("SPARQL query timed out after 25 seconds")
+    }
+    console.error(`[SPARQL] ✗ ${endpointLabel} | ${err instanceof Error ? err.message : String(err)} (${elapsed} ms)`)
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
   }
+}
 
-  return response.json() as Promise<SparqlResponse>
+// ── Wikidata entity-search via MediaWiki API (indexed — much faster than SPARQL CONTAINS) ───
+
+async function resolveWikidataEntityIds(
+  name: string,
+  limit = 12
+): Promise<string[]> {
+  const url = new URL("https://www.wikidata.org/w/api.php")
+  url.searchParams.set("action", "wbsearchentities")
+  url.searchParams.set("search", name)
+  url.searchParams.set("language", "en")
+  url.searchParams.set("uselang", "en")
+  url.searchParams.set("type", "item")
+  url.searchParams.set("format", "json")
+  url.searchParams.set("limit", String(limit))
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 8_000)
+  const start = Date.now()
+
+  try {
+    console.log(`[wbsearch] → searching "${name}" (limit ${limit})`)
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "MusiGraph/1.0 (https://musigraph.app)" },
+      signal: controller.signal,
+    })
+    if (!res.ok) {
+      console.warn(`[wbsearch] ✗ HTTP ${res.status} (${Date.now() - start} ms)`)
+      return []
+    }
+    const data = (await res.json()) as { search?: { id: string }[] }
+    const ids = (data.search ?? []).map((item) => item.id)
+    console.log(`[wbsearch] ✓ ${ids.length} entity ID(s) in ${Date.now() - start} ms → ${ids.join(", ")}`)
+    return ids
+  } catch (err) {
+    console.warn(`[wbsearch] ✗ ${err instanceof Error ? err.message : String(err)} (${Date.now() - start} ms)`)
+    return []
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 // ── Query builders ─────────────────────────────────────────────────────────
@@ -88,43 +160,81 @@ async function searchArtist(
     return executeSparqlQuery(query, endpoint)
   }
 
-  // Wikidata
-  let filterStr = ""
-  let typeBlock = ""
+  // Wikidata — two-step approach:
+  //  1. Resolve the artist name to Q-IDs via the fast wbsearchentities API
+  //  2. Fetch details with a VALUES-bounded SPARQL query (no full-table scan)
+  const trimmedName = name?.trim() ?? ""
 
-  if (filters.artistType === "band") {
-    typeBlock = `?artist wdt:P31 wd:Q215380 .`
-  } else if (filters.artistType === "solo") {
-    typeBlock = `?artist wdt:P31 wd:Q5 . ?artist wdt:P106 wd:Q639669 .`
-  } else {
-    typeBlock = `{ ?artist wdt:P31 wd:Q215380 . } UNION { ?artist wdt:P31 wd:Q5 . ?artist wdt:P106 wd:Q639669 . }`
+  if (trimmedName) {
+    const entityIds = await resolveWikidataEntityIds(trimmedName)
+
+    if (entityIds.length === 0) {
+      console.log(`[searchArtist] No entity IDs found for "${trimmedName}", returning empty`)
+      return { results: { bindings: [] } }
+    }
+
+    const valuesClause = entityIds.map((id) => `wd:${id}`).join(" ")
+
+    let extraFilters = ""
+    if (filters.genre) extraFilters += `?artist wdt:P136 wd:${filters.genre} .\n`
+    if (filters.decade) {
+      extraFilters += `
+        ?artist wdt:P571 ?formationDate .
+        FILTER (YEAR(?formationDate) >= ${filters.decade} && YEAR(?formationDate) < ${parseInt(filters.decade) + 10})
+      `
+    }
+
+    const query = `
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wikibase: <http://wikiba.se/ontology#>
+      PREFIX bd: <http://www.bigdata.com/rdf#>
+
+      SELECT DISTINCT ?artist ?artistLabel ?mbid ?birthDate ?country ?countryLabel ?genre ?genreLabel ?instrument ?instrumentLabel ?image
+      WHERE {
+        VALUES ?artist { ${valuesClause} }
+        ${extraFilters}
+        OPTIONAL { ?artist wdt:P434 ?mbid }
+        OPTIONAL { ?artist wdt:P569 ?birthDate }
+        OPTIONAL { ?artist wdt:P571 ?birthDate }
+        OPTIONAL { ?artist wdt:P27 ?country }
+        OPTIONAL { ?artist wdt:P495 ?country }
+        OPTIONAL { ?artist wdt:P136 ?genre }
+        OPTIONAL { ?artist wdt:P1303 ?instrument }
+        OPTIONAL { ?artist wdt:P18 ?image }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
+      }
+    `
+    return executeSparqlQuery(query, endpoint)
   }
 
-  if (name?.trim()) {
-    filterStr += `?artist rdfs:label ?artistLabel . FILTER(CONTAINS(LCASE(?artistLabel), LCASE("${name}")))\n`
-  } else {
-    filterStr += `?artist rdfs:label ?artistLabel .\n`
-  }
+  // No name given — return a curated list of well-known artists (fast VALUES query)
+  const fallbackValues = [
+    "wd:Q1299",  // The Beatles
+    "wd:Q2306",  // Pink Floyd
+    "wd:Q5384",  // Led Zeppelin
+    "wd:Q1321",  // Rolling Stones
+    "wd:Q392",   // Bob Dylan
+    "wd:Q1233",  // Radiohead
+    "wd:Q11649", // Nirvana
+    "wd:Q83160", // David Bowie
+    "wd:Q4930",  // Johnny Cash
+    "wd:Q1364",  // Miles Davis
+  ].join(" ")
 
-  if (filters.genre) {
-    filterStr += `?artist wdt:P136 wd:${filters.genre} .\n`
-  }
-
-  if (filters.decade) {
-    filterStr += `OPTIONAL { ?artist wdt:P571 ?formationDate } FILTER (YEAR(?formationDate) >= ${filters.decade} && YEAR(?formationDate) < ${parseInt(filters.decade) + 10})\n`
-  }
+  let extraFilters = ""
+  if (filters.genre) extraFilters += `?artist wdt:P136 wd:${filters.genre} .\n`
 
   const query = `
     PREFIX wd: <http://www.wikidata.org/entity/>
     PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX wikibase: <http://wikiba.se/ontology#>
     PREFIX bd: <http://www.bigdata.com/rdf#>
 
     SELECT DISTINCT ?artist ?artistLabel ?mbid ?birthDate ?country ?countryLabel ?genre ?genreLabel ?instrument ?instrumentLabel ?image
     WHERE {
-      ${typeBlock}
-      ${filterStr}
+      VALUES ?artist { ${fallbackValues} }
+      ${extraFilters}
       OPTIONAL { ?artist wdt:P434 ?mbid }
       OPTIONAL { ?artist wdt:P569 ?birthDate }
       OPTIONAL { ?artist wdt:P571 ?birthDate }
@@ -135,8 +245,6 @@ async function searchArtist(
       OPTIONAL { ?artist wdt:P18 ?image }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
     }
-    ORDER BY ?artistLabel
-    LIMIT 30
   `
   return executeSparqlQuery(query, endpoint)
 }
@@ -333,12 +441,17 @@ async function queryGetTopBands(): Promise<SparqlResponse> {
 // ── Route Handler ──────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  const reqStart = Date.now()
+
   try {
     const body = (await request.json()) as SparqlRequestBody
     const { action, params } = body
 
     const endpoint =
       params.endpoint === DBPEDIA_ENDPOINT ? DBPEDIA_ENDPOINT : WIKIDATA_ENDPOINT
+    const endpointLabel = endpoint.includes("dbpedia") ? "DBpedia" : "Wikidata"
+
+    console.log(`[API /sparql] ← action="${action}" endpoint=${endpointLabel} params=${JSON.stringify(params)}`)
 
     let result: SparqlResponse
 
@@ -388,13 +501,19 @@ export async function POST(request: NextRequest) {
         break
 
       default:
+        console.warn(`[API /sparql] Unknown action: "${action}"`)
         return NextResponse.json({ error: "Unknown action" }, { status: 400 })
     }
 
+    const totalMs = Date.now() - reqStart
+    const count = result.results?.bindings?.length ?? 0
+    console.log(`[API /sparql] ✓ action="${action}" | ${count} binding(s) | total ${totalMs} ms`)
+
     return NextResponse.json(result)
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "SPARQL query failed"
+    const totalMs = Date.now() - reqStart
+    const message = error instanceof Error ? error.message : "SPARQL query failed"
+    console.error(`[API /sparql] ✗ ${message} | total ${totalMs} ms`)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
