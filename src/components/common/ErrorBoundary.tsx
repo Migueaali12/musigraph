@@ -1,10 +1,12 @@
 "use client"
 
 import { Component, ReactNode } from "react"
+import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
+  dict?: Dictionary
 }
 
 interface State {
@@ -28,6 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const dict = this.props.dict
       return (
         this.props.fallback || (
           <div className='flex flex-col items-center justify-center p-8 text-center'>
@@ -41,16 +44,16 @@ export class ErrorBoundary extends Component<Props, State> {
               </svg>
             </div>
             <h3 className='text-xl font-bold text-white mb-2'>
-              Algo salió mal
+              {dict?.error.somethingWrong ?? "Algo salió mal"}
             </h3>
             <p className='text-gray-300 mb-4'>
-              {this.state.error?.message || "Error inesperado"}
+              {this.state.error?.message || (dict?.error.unexpected ?? "Error inesperado")}
             </p>
             <button
               onClick={() => this.setState({ hasError: false })}
               className='bg-coral-vibrant text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors'
             >
-              Intentar de nuevo
+              {dict?.error.tryAgain ?? "Intentar de nuevo"}
             </button>
           </div>
         )

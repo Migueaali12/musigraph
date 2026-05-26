@@ -1,6 +1,7 @@
 "use client"
 
 import { Music, Disc, BarChart3 } from "lucide-react"
+import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface StatsCardProps {
   icon: React.ReactNode
@@ -19,25 +20,29 @@ function StatsCard({ icon, title, description, color }: StatsCardProps) {
   )
 }
 
-export function AppStats() {
+interface AppStatsProps {
+  dict: Dictionary
+}
+
+export function AppStats({ dict }: AppStatsProps) {
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12'>
       <StatsCard
         icon={<Music className="w-8 h-8" />}
-        title='Explorar Artistas'
-        description='Busca información detallada de cualquier artista o banda musical'
+        title={dict.stats.exploreArtists}
+        description={dict.stats.exploreDescription}
         color='from-coral-vibrant to-pink-symphonic'
       />
       <StatsCard
         icon={<Disc className="w-8 h-8" />}
-        title='Discografía'
-        description='Descubre las influencias musicales y conexiones entre artistas'
+        title={dict.stats.discography}
+        description={dict.stats.discographyDescription}
         color='from-turquoise-musical to-blue-harmonic'
       />
       <StatsCard
         icon={<BarChart3 className="w-8 h-8" />}
-        title='Datos Semánticos'
-        description='Información estructurada desde Wikidata en tiempo real'
+        title={dict.stats.semanticData}
+        description={dict.stats.semanticDescription}
         color='from-gold-rhythmic to-coral-vibrant'
       />
     </div>

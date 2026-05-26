@@ -1,13 +1,16 @@
 "use client"
 
-import Link from "next/link"
 import Image from "next/image"
-import { FlaskConical } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { Globe, ChevronDown } from "lucide-react"
 import { ThemeToggle } from "./ThemeToggle"
+import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
 
 interface HeaderProps {
   endpoint: string
   onEndpointChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
+  dict: Dictionary
+  locale: Locale
 }
 
 const SPARQL_ENDPOINTS = [
@@ -15,7 +18,29 @@ const SPARQL_ENDPOINTS = [
   { label: "DBpedia", value: "https://dbpedia.org/sparql" },
 ]
 
-export function Header({ endpoint, onEndpointChange }: HeaderProps) {
+const LANGUAGES = [
+  { code: "en" as Locale, label: "English" },
+  { code: "es" as Locale, label: "Español" },
+]
+
+export function Header({
+  endpoint,
+  onEndpointChange,
+  dict,
+  locale,
+}: HeaderProps) {
+  const pathname = usePathname()
+
+  const handleLanguageChange = (newLocale: Locale) => {
+    if (newLocale === locale) return
+
+    // Get the path after the locale segment
+    const pathWithoutLocale = pathname.replace(/^\/(en|es)/, "") || "/"
+    const newPath = `/${newLocale}${pathWithoutLocale}`
+
+    window.location.href = newPath
+  }
+
   return (
     <header className='flex justify-between items-center py-6 px-6 border-b border-border bg-surface/80 backdrop-blur-sm'>
       <div className='flex items-center gap-4'>
@@ -34,8 +59,11 @@ export function Header({ endpoint, onEndpointChange }: HeaderProps) {
       </div>
 
       <div className='flex items-center gap-3'>
-        <label htmlFor='endpoint-select' className='text-muted text-sm hidden sm:block'>
-          Endpoint:
+        <label
+          htmlFor='endpoint-select'
+          className='text-muted text-sm hidden sm:block'
+        >
+          {dict.header.endpoint}
         </label>
         <select
           id='endpoint-select'
@@ -50,13 +78,40 @@ export function Header({ endpoint, onEndpointChange }: HeaderProps) {
           ))}
         </select>
 
-        <div className='hidden md:block'>
-          <Link
-            href='/test'
-            className='px-3 py-2 bg-surface border border-border text-foreground rounded-lg hover:bg-surface-elevated transition-colors text-sm flex items-center gap-1'
+        <div className='relative group'>
+          <button
+            className='flex items-center gap-2 bg-surface border border-border text-foreground rounded-lg px-3 py-2 text-sm hover:border-coral-vibrant/50 transition-colors focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+            aria-label={dict.header.language}
+            aria-haspopup='true'
+            aria-expanded='false'
           >
-            <FlaskConical className="w-4 h-4" /> Tests
-          </Link>
+            <Globe size={16} />
+
+            <span className='font-medium'>{dict.header[locale]}</span>
+            <ChevronDown size={14} className='text-muted' />
+          </button>
+
+          <div className='absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-surface border border-border rounded-lg shadow-lg overflow-hidden z-50 min-w-[140px]'>
+            {LANGUAGES.map((lang) => {
+              const isActive = lang.code === locale
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => handleLanguageChange(lang.code)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-coral-vibrant/10 transition-colors ${
+                    isActive
+                      ? "bg-coral-vibrant/10 text-coral-vibrant font-medium"
+                      : "text-foreground"
+                  }`}
+                >
+                  <span>{lang.label}</span>
+                  {isActive && (
+                    <span className='ml-auto text-coral-vibrant'>✓</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <ThemeToggle />
