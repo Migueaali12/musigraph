@@ -1,136 +1,192 @@
-# MusiGraph — Explorador Musical Semántico
+<div align="center">
+  <img src="public/musigraph-logo-vector.svg" alt="MusiGraph Logo" width="120" height="110" />
+  <h1>MusiGraph</h1>
+  <p>Semantic Music Explorer — Discover connections in music through linked data</p>
+</div>
 
-MusiGraph es una aplicación web **open source** que te permite **explorar el universo musical como un grafo de conocimiento**: artistas, géneros, álbumes, influencias y colaboraciones conectadas entre sí.
+<p align="center">
+  <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs" alt="Next.js" /></a>
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React" /></a>
+  <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss" alt="Tailwind CSS" /></a>
+  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript" alt="TypeScript" /></a>
+  <a href="https://pnpm.io"><img src="https://img.shields.io/badge/pnpm-F69220?style=flat-square&logo=pnpm" alt="pnpm" /></a>
+  <a href="https://www.wikidata.org"><img src="https://img.shields.io/badge/Data-Wikidata-006699?style=flat-square&logo=wikidata" alt="Wikidata" /></a>
+</p>
 
-El proyecto consulta datos en tiempo real desde **Wikidata** mediante **SPARQL**, y los presenta de forma clara e interactiva para que puedas **descubrir relaciones** que normalmente no se ven en una búsqueda tradicional.
-
-> Estado: en desarrollo (MVP). Este repositorio se enfoca en construir una base sólida para exploración semántica y visualización de relaciones musicales.
-
----
-
-## ¿Por qué MusiGraph?
-
-La información musical en la web suele estar fragmentada: biografías por un lado, discografías por otro, influencias y colaboraciones en páginas separadas. MusiGraph busca unificarlo con un enfoque de **datos semánticos**:
-
-- **Descubrimiento**: encontrar artistas relacionados por influencias, escenas, movimientos o colaboraciones.
-- **Aprendizaje**: entender cómo evolucionan géneros y conexiones culturales a través del tiempo.
-- **Demostración técnica**: mostrar el poder de SPARQL + conocimiento abierto (Wikidata) aplicado a música.
-
----
-
-## Características (actuales y planeadas)
-
-> Algunas funciones pueden estar en progreso. La visión completa está detallada en [`Requirements.md`](./Requirements.md).
-
-- Búsqueda de artistas/bandas.
-- Consulta a **Wikidata Query Service** (SPARQL) para obtener datos estructurados.
-- Presentación de información musical conectada.
-- (Plan) Visualizaciones: red/grafo de influencias, timeline, colaboraciones.
-- (Plan) Filtros por género, década, país, tipo de artista.
-
----
-
-## Tecnologías
-
-- **Next.js** (App Router)
-- **React**
-- **TypeScript**
-- **Tailwind CSS**
+<p align="center">
+  <a href="#features">Features</a>
+  &middot;
+  <a href="#tech-stack">Tech Stack</a>
+  &middot;
+  <a href="#getting-started">Getting Started</a>
+  &middot;
+  <a href="#project-structure">Project Structure</a>
+  &middot;
+  <a href="#data-source">Data Source</a>
+  &middot;
+  <a href="#roadmap">Roadmap</a>
+</p>
 
 ---
 
-## Fuente de datos
+## Overview
 
-- **Wikidata**: `https://query.wikidata.org/sparql`
+MusiGraph is a web application that explores the musical universe through **semantic data visualization**. It queries real-time information from **Wikidata** using **SPARQL** to reveal connections between artists, albums, genres, influences, and collaborations that traditional search tools miss.
 
-Wikidata ofrece datos musicales amplios, multilingües y mantenidos por la comunidad. MusiGraph construye consultas SPARQL para recuperar:
+> [!NOTE]
+> This project is currently in active development (MVP phase). The focus is on building a solid foundation for semantic music exploration and relationship visualization.
 
-- información básica del artista
-- géneros
-- discografía
-- influencias (`wdt:P737`)
-- colaboraciones (según modelos de datos disponibles en Wikidata)
+## Features
 
----
+### Current
 
-## Cómo ejecutar el proyecto
+- **Artist Search** — Look up any musician or band and retrieve structured information
+- **SPARQL Integration** — Direct queries to Wikidata Query Service for real-time data
+- **Artist Profiles** — Display biographical data, genres, instruments, and origins
+- **Responsive UI** — Built with Tailwind CSS for a consistent experience across devices
 
-### Requisitos
+### Planned
 
-- Node.js (recomendado: LTS)
-- npm (incluido con Node) o tu gestor preferido
+- **Influence Network** — Interactive graph showing musical influences between artists
+- **Discography Timeline** — Visual timeline of album releases
+- **Collaboration Explorer** — Map collaborations and "degrees of separation"
+- **Genre Evolution** — Track how genres emerge and branch over time
+- **Geographic Mapping** — Explore musical scenes by region
+- **Advanced Filters** — Filter by genre, decade, country, and artist type
 
-### Instalación
+## Tech Stack
+
+| Category      | Technology                          |
+|---------------|-------------------------------------|
+| Framework     | [Next.js 15](https://nextjs.org/)   |
+| UI Library    | [React 19](https://react.dev/)      |
+| Language      | [TypeScript 5](https://www.typescriptlang.org/) |
+| Styling       | [Tailwind CSS 4](https://tailwindcss.com/) |
+| Icons         | [Lucide React](https://lucide.dev/) |
+| Data Source   | [Wikidata SPARQL](https://query.wikidata.org/) |
+| Package Manager | [pnpm](https://pnpm.io/)          |
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+ (LTS recommended)
+- [pnpm](https://pnpm.io/) (or npm/yarn)
+
+### Installation
 
 ```bash
-npm install
+# Clone the repository
+git clone https://github.com/Migueaali12/musigraph.git
+cd musigraph
+
+# Install dependencies
+pnpm install
 ```
 
-### Desarrollo
+### Development
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Abre `http://localhost:3000` en el navegador.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Build y producción
+### Production Build
 
 ```bash
-npm run build
-npm run start
+pnpm build
+pnpm start
 ```
 
----
+### Linting
 
-## Estructura del repositorio (alto nivel)
+```bash
+pnpm lint
+```
 
-- `src/` — código fuente de la aplicación
-- `public/` — recursos estáticos
-- `Requirements.md` — visión/alcance del producto, consultas base SPARQL y especificación funcional
+## Project Structure
 
----
+```
+musigraph/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── layout.tsx          # Root layout
+│   │   └── page.tsx            # Home page
+│   ├── components/
+│   │   ├── artist/             # Artist-related components
+│   │   │   ├── ArtistProfile.tsx
+│   │   │   └── DiscographyView.tsx
+│   │   ├── common/             # Shared UI components
+│   │   │   ├── AppStats.tsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── Loading.tsx
+│   │   │   └── WelcomeMessage.tsx
+│   │   └── search/             # Search-related components
+│   │       ├── SearchBar.tsx
+│   │       └── SearchResults.tsx
+│   ├── services/               # Data and query services
+│   │   ├── sparqlService.ts    # Wikidata SPARQL client
+│   │   ├── queryBuilder.ts     # Dynamic SPARQL query builder
+│   │   ├── dataProcessor.ts    # Response processing
+│   │   └── musicbrainzService.ts # MusicBrainz integration
+│   └── utils/                  # Utilities and constants
+│       ├── constants.ts
+│       └── sparqlQueries.ts    # Predefined SPARQL queries
+├── public/                     # Static assets
+│   └── musigraph-logo-vector.svg
+├── AGENTS.md                   # Project specification
+└── package.json
+```
 
-## Contribuir
+## Data Source
 
-¡Contribuciones son bienvenidas!
+MusiGraph queries **Wikidata** (`https://query.wikidata.org/sparql`) for structured musical data. Wikidata provides:
 
-1. Haz un fork del repositorio
-2. Crea una rama con tu cambio: `git checkout -b feature/mi-cambio`
-3. Ejecuta el proyecto localmente y verifica que todo funciona
-4. Abre un Pull Request describiendo:
-   - qué problema resuelve
-   - cómo probarlo
-   - capturas de pantalla si aplica
+- Broad coverage of artists, albums, and genres
+- Community-maintained and constantly updated
+- Multi-language support
+- Linked data with references
 
-Sugerencias de contribución:
+### Key Wikidata Properties Used
 
-- mejorar consultas SPARQL (rendimiento / cobertura)
-- agregar visualizaciones (grafos, timelines)
-- mejorar UI/UX
-- añadir tests
-- documentación
+| Property | Description           | Example              |
+|----------|-----------------------|----------------------|
+| `P31`    | Instance of           | Human, musical group |
+| `P136`   | Musical genre         | Rock, Jazz           |
+| `P175`   | Performer             | Artist/band          |
+| `P577`   | Publication date      | Album release        |
+| `P737`   | Influenced by         | Musical influences   |
+| `P569`   | Date of birth         | Artist birth date    |
+| `P27`    | Country of citizenship| Artist origin        |
 
----
+> [!TIP]
+> You can test SPARQL queries directly at the [Wikidata Query Service](https://query.wikidata.org/). Reference entities: The Beatles (`wd:Q1299`), Pink Floyd (`wd:Q2306`), Rock music (`wd:Q11399`).
 
-## Roadmap (orientativo)
+## Architecture
 
-- [ ] MVP de búsqueda de artista y ficha básica
-- [ ] Discografía + timeline
-- [ ] Red de influencias (grafo interactivo)
-- [ ] Colaboraciones y “grados de separación”
-- [ ] Cache / optimización de consultas
-- [ ] Despliegue (Vercel)
+```
+User Input → SearchBar → QueryBuilder → SPARQL Service → Wikidata
+                                                       ↓
+UI Rendering ← DataProcessor ← Response Processing ← Raw Results
+```
 
----
+## Roadmap
 
-## Licencia
+- [ ] MVP: Artist search with basic profile information
+- [ ] Discography with release timeline
+- [ ] Interactive influence network graph
+- [ ] Collaboration explorer with connection paths
+- [ ] Query caching and performance optimization
+- [ ] Production deployment
 
-Este proyecto está licenciado bajo la [MIT License](./LICENSE).
+## License
 
----
+This project is licensed under the [MIT License](./LICENSE).
 
-## Créditos
+## Credits
 
-- Datos: **Wikidata** y su comunidad
-- Stack: **Next.js** / **React**
+- **Data**: [Wikidata](https://www.wikidata.org/) and its community of contributors
+- **Framework**: [Next.js](https://nextjs.org/) / [React](https://react.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [Lucide](https://lucide.dev/)
