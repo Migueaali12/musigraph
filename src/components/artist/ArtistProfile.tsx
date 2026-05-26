@@ -12,6 +12,17 @@ import {
   type ProcessedArtistData,
 } from "@/services/dataProcessor"
 import Image from "next/image"
+import {
+  MapPin,
+  Calendar,
+  Music,
+  Disc,
+  Lightbulb,
+  Handshake,
+  BarChart3,
+  Tag,
+  Users,
+} from "lucide-react"
 import { fetchDiscographyFromMusicBrainz } from "@/services/musicbrainzService"
 
 interface ArtistProfileProps {
@@ -177,14 +188,14 @@ export function ArtistProfile({
               <div className='space-y-3'>
                 {artist.country && (
                   <div className='flex items-center gap-2'>
-                    <span className='text-gray-400'>📍 País:</span>
+                    <span className='text-gray-400 inline-flex items-center gap-1'><MapPin className="w-4 h-4" /> País:</span>
                     <span className='text-white'>{artist.country}</span>
                   </div>
                 )}
 
                 {artist.birthDate && (
                   <div className='flex items-center gap-2'>
-                    <span className='text-gray-400'>📅 Año:</span>
+                    <span className='text-gray-400 inline-flex items-center gap-1'><Calendar className="w-4 h-4" /> Año:</span>
                     <span className='text-white'>
                       {new Date(artist.birthDate).getFullYear()}
                     </span>
@@ -193,7 +204,7 @@ export function ArtistProfile({
 
                 {artist.instruments.length > 0 && (
                   <div className='flex items-start gap-2'>
-                    <span className='text-gray-400'>🎵 Instrumentos:</span>
+                    <span className='text-gray-400 inline-flex items-center gap-1'><Music className="w-4 h-4" /> Instrumentos:</span>
                     <div className='flex flex-wrap gap-1'>
                       {artist.instruments.map((instrument, index) => (
                         <span
@@ -213,21 +224,21 @@ export function ArtistProfile({
                 {!isLoading && (
                   <>
                     <div className='flex items-center gap-2'>
-                      <span className='text-gray-400'>💿 Álbumes:</span>
+                      <span className='text-gray-400 inline-flex items-center gap-1'><Disc className="w-4 h-4" /> Álbumes:</span>
                       <span className='text-white font-semibold'>
                         {processedData.statistics.totalAlbums}
                       </span>
                     </div>
 
                     <div className='flex items-center gap-2'>
-                      <span className='text-gray-400'>🎭 Influencias:</span>
+                      <span className='text-gray-400 inline-flex items-center gap-1'><Lightbulb className="w-4 h-4" /> Influencias:</span>
                       <span className='text-white font-semibold'>
                         {processedData.statistics.totalInfluences}
                       </span>
                     </div>
 
                     <div className='flex items-center gap-2'>
-                      <span className='text-gray-400'>🤝 Colaboraciones:</span>
+                      <span className='text-gray-400 inline-flex items-center gap-1'><Handshake className="w-4 h-4" /> Colaboraciones:</span>
                       <span className='text-white font-semibold'>
                         {processedData.statistics.totalCollaborations}
                       </span>
@@ -263,21 +274,21 @@ export function ArtistProfile({
       <div className='mb-8'>
         <div className='flex space-x-1 bg-white/5 backdrop-blur-sm rounded-2xl p-1'>
           {[
-            { id: "overview", label: "Resumen", icon: "📊" },
-            { id: "discography", label: "Discografía", icon: "💿" },
-            { id: "influences", label: "Influencias", icon: "🎭" },
-            { id: "collaborations", label: "Colaboraciones", icon: "🤝" },
+            { id: "overview", label: "Resumen", icon: <BarChart3 className="w-4 h-4" /> },
+            { id: "discography", label: "Discografía", icon: <Disc className="w-4 h-4" /> },
+            { id: "influences", label: "Influencias", icon: <Lightbulb className="w-4 h-4" /> },
+            { id: "collaborations", label: "Colaboraciones", icon: <Handshake className="w-4 h-4" /> },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
-              className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all ${
+              className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-1 ${
                 activeTab === tab.id
                   ? "bg-coral-vibrant text-white shadow-lg"
                   : "text-gray-400 hover:text-white hover:bg-white/10"
               }`}
             >
-              <span className='mr-2'>{tab.icon}</span>
+              {tab.icon}
               {tab.label}
             </button>
           ))}
@@ -410,9 +421,9 @@ function DiscographyTab({ discography }: { discography: AlbumInfo[] }) {
               <h4 className='font-semibold text-white'>{album.title}</h4>
               <div className='flex items-center gap-4 text-sm text-gray-400'>
                 {album.releaseDate && (
-                  <span>📅 {new Date(album.releaseDate).getFullYear()}</span>
+                  <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" /> {new Date(album.releaseDate).getFullYear()}</span>
                 )}
-                {album.label && <span>🏷️ {album.label}</span>}
+                {album.label && <span className="inline-flex items-center gap-1"><Tag className="w-4 h-4" /> {album.label}</span>}
               </div>
             </div>
           </div>
@@ -465,8 +476,8 @@ function InfluencesTab({ influences }: { influences: ArtistInfo[] }) {
           >
             <h4 className='font-semibold text-white mb-2'>{influence.name}</h4>
             {influence.country && (
-              <p className='text-sm text-gray-400 mb-2'>
-                📍 {influence.country}
+              <p className='text-sm text-gray-400 mb-2 inline-flex items-center gap-1'>
+                <MapPin className="w-4 h-4" /> {influence.country}
               </p>
             )}
             {influence.genres.length > 0 && (
@@ -533,9 +544,9 @@ function CollaborationsTab({
           >
             <h4 className='font-semibold text-white mb-2'>{collab.song}</h4>
             <div className='flex items-center gap-4 text-sm text-gray-400'>
-              <span>👥 Con {collab.artist2}</span>
+              <span className="inline-flex items-center gap-1"><Users className="w-4 h-4" /> Con {collab.artist2}</span>
               {collab.releaseDate && (
-                <span>📅 {new Date(collab.releaseDate).getFullYear()}</span>
+                <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" /> {new Date(collab.releaseDate).getFullYear()}</span>
               )}
             </div>
           </div>
