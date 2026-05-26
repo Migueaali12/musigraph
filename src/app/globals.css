@@ -1,20 +1,35 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  /* Brand Colors */
   --color-coral-vibrant: #ff6b6b;
   --color-turquoise-musical: #4ecdc4;
   --color-blue-harmonic: #45b7d1;
   --color-green-melodic: #96ceb4;
   --color-gold-rhythmic: #ffeaa7;
   --color-pink-symphonic: #fd79a8;
+
+  /* Raw palette tokens (for direct use) */
   --color-deep-night: #0f0f23;
   --color-soft-midnight: #1a1a2e;
   --color-acoustic-gray: #2d3748;
   --color-pure-white: #ffffff;
 
-  --color-background: var(--color-pure-white);
-  --color-foreground: var(--color-deep-night);
+  /* Semantic Tokens — values change via :root / .dark */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
 
+  /* Gradients */
   --background-image-gradient-energy: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
   --background-image-gradient-ocean: linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%);
   --background-image-gradient-sunrise: linear-gradient(135deg, #fd79a8 0%, #ffeaa7 100%);
@@ -22,26 +37,47 @@
   --font-sans: var(--font-space-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: var(--color-deep-night);
-    --color-foreground: var(--color-pure-white);
-  }
+/* ── Light Mode ───────────────────────────────────────── */
+:root {
+  --background: #f8f7f4;
+  --foreground: #0f0f23;
+  --surface: #ffffff;
+  --surface-elevated: #f0efec;
+  --border: #e2e0db;
+  --muted: #6b7280;
+  --muted-foreground: #6b7280;
+  --primary: #ff6b6b;
+  --primary-foreground: #ffffff;
+  --ring: #ff6b6b;
+}
+
+/* ── Dark Mode ────────────────────────────────────────── */
+.dark {
+  --background: #0f0f23;
+  --foreground: #f8f7f4;
+  --surface: #1a1a2e;
+  --surface-elevated: #2d3748;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #94a3b8;
+  --muted-foreground: #94a3b8;
+  --primary: #ff6b6b;
+  --primary-foreground: #ffffff;
+  --ring: #ff6b6b;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Animaciones personalizadas */
+/* ── Custom Animations ────────────────────────────────── */
 @keyframes fade-in {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -53,7 +89,6 @@ body {
     opacity: 0;
     transform: translateX(-20px);
   }
-
   to {
     opacity: 1;
     transform: translateX(0);
@@ -73,7 +108,7 @@ body {
   animation-name: slide-in;
 }
 
-/* Efectos de hover mejorados */
+/* ── Hover Effects ────────────────────────────────────── */
 .hover-glow:hover {
   box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
 }

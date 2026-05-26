@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { WIKIDATA_ENTITIES } from "@/utils/constants"
+import { Search, SlidersHorizontal } from "lucide-react"
 
 export interface SearchFilters {
   genre?: string
@@ -32,7 +33,6 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
     onSearch(term, filters)
   }
 
-  // Solo actualizar filtros, no disparar búsqueda automáticamente
   function handleFilterChange(newFilters: SearchFilters) {
     setFilters(newFilters)
   }
@@ -71,35 +71,24 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
       <form onSubmit={handleSubmit} className='mb-6'>
         <div className='relative'>
           <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-            <svg
-              className='w-6 h-6 text-gray-400 z-10'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-              />
-            </svg>
+            <Search className='w-5 h-5 text-muted z-10' />
           </div>
           <input
             type='text'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder='Buscar artista, banda o compositor...'
-            className='w-full pl-12 pr-32 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 text-lg focus:outline-none focus:ring-2 focus:ring-coral-vibrant focus:border-transparent transition-all'
+            className='w-full pl-12 pr-36 py-4 bg-surface border border-border rounded-2xl text-foreground placeholder-muted text-lg focus:outline-none focus:ring-2 focus:ring-coral-vibrant focus:border-transparent transition-all shadow-sm'
             disabled={isLoading}
           />
           <div className='absolute inset-y-0 right-0 flex items-center'>
             <button
               type='button'
               onClick={() => setShowFilters(!showFilters)}
-              className='mr-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors'
+              className='mr-2 px-3 py-2 bg-surface-elevated border border-border text-foreground rounded-lg hover:bg-border transition-colors text-sm flex items-center gap-1.5'
               disabled={isLoading}
             >
+              <SlidersHorizontal className="w-4 h-4" />
               Filtros
             </button>
             <button
@@ -108,7 +97,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                 isLoading ||
                 (!searchTerm.trim() && !Object.values(filters).some(Boolean))
               }
-              className='mr-2 px-6 py-2 bg-gradient-energy text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50'
+              className='mr-2 px-6 py-2 bg-gradient-energy text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 text-sm'
             >
               {isLoading ? "Buscando..." : "Buscar"}
             </button>
@@ -118,14 +107,14 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
 
       {/* Filtros avanzados */}
       {showFilters && (
-        <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/10'>
-          <h3 className='text-white text-lg font-semibold mb-4'>
+        <div className='bg-surface border border-border rounded-2xl p-6 mb-6 shadow-sm'>
+          <h3 className='text-foreground text-lg font-semibold mb-4'>
             Filtros Avanzados
           </h3>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
             {/* Género */}
             <div>
-              <label className='block text-sm font-medium text-gray-300 mb-2'>
+              <label className='block text-sm font-medium text-muted-foreground mb-2'>
                 Género Musical
               </label>
               <select
@@ -137,15 +126,11 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                   }
                   handleFilterChange(newFilters)
                 }}
-                className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+                className='w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
               >
                 <option value=''>Todos los géneros</option>
                 {genres.map((genre) => (
-                  <option
-                    key={genre.id}
-                    value={genre.id}
-                    className='bg-acoustic-gray'
-                  >
+                  <option key={genre.id} value={genre.id}>
                     {genre.label}
                   </option>
                 ))}
@@ -154,7 +139,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
 
             {/* Década */}
             <div>
-              <label className='block text-sm font-medium text-gray-300 mb-2'>
+              <label className='block text-sm font-medium text-muted-foreground mb-2'>
                 Década
               </label>
               <select
@@ -166,15 +151,11 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                   }
                   handleFilterChange(newFilters)
                 }}
-                className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+                className='w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
               >
                 <option value=''>Todas las décadas</option>
                 {decades.map((decade) => (
-                  <option
-                    key={decade.value}
-                    value={decade.value}
-                    className='bg-acoustic-gray'
-                  >
+                  <option key={decade.value} value={decade.value}>
                     {decade.label}
                   </option>
                 ))}
@@ -183,7 +164,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
 
             {/* Tipo de artista */}
             <div>
-              <label className='block text-sm font-medium text-gray-300 mb-2'>
+              <label className='block text-sm font-medium text-muted-foreground mb-2'>
                 Tipo de Artista
               </label>
               <select
@@ -196,18 +177,12 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                   }
                   handleFilterChange(newFilters)
                 }}
-                className='w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+                className='w-full px-3 py-2 bg-surface-elevated border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
               >
                 <option value=''>Todos los tipos</option>
-                <option value='solo' className='bg-acoustic-gray'>
-                  Solista
-                </option>
-                <option value='band' className='bg-acoustic-gray'>
-                  Banda
-                </option>
-                <option value='composer' className='bg-acoustic-gray'>
-                  Compositor
-                </option>
+                <option value='solo'>Solista</option>
+                <option value='band'>Banda</option>
+                <option value='composer'>Compositor</option>
               </select>
             </div>
 
@@ -219,7 +194,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
                   setFilters({})
                   handleFilterChange({})
                 }}
-                className='w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors'
+                className='w-full px-4 py-2 bg-surface-elevated border border-border text-foreground rounded-lg hover:bg-border transition-colors'
               >
                 Limpiar Filtros
               </button>
@@ -230,14 +205,14 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
 
       {/* Búsquedas rápidas */}
       <div className='text-center'>
-        <p className='text-gray-400 text-sm mb-3'>Búsquedas populares:</p>
+        <p className='text-muted-foreground text-sm mb-3'>Búsquedas populares:</p>
         <div className='flex flex-wrap justify-center gap-2'>
           {quickSearchTerms.map((term) => (
             <button
               key={term}
               onClick={() => handleQuickSearch(term)}
               disabled={isLoading}
-              className='px-4 py-2 bg-white/10 text-white rounded-full text-sm hover:bg-white/20 transition-colors disabled:opacity-50'
+              className='px-4 py-2 bg-surface border border-border text-foreground rounded-full text-sm hover:border-coral-vibrant/50 hover:text-coral-vibrant transition-colors disabled:opacity-50'
             >
               {term}
             </button>

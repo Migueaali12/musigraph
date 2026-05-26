@@ -11,7 +11,7 @@ interface StatsCardProps {
 
 function StatsCard({ icon, title, description, color }: StatsCardProps) {
   return (
-    <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white`}>
+    <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white shadow-md`}>
       <div className='mb-3'>{icon}</div>
       <h3 className='text-lg font-semibold mb-2'>{title}</h3>
       <p className='text-white/80 text-sm'>{description}</p>
