@@ -34,7 +34,8 @@
   --background-image-gradient-ocean: linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%);
   --background-image-gradient-sunrise: linear-gradient(135deg, #fd79a8 0%, #ffeaa7 100%);
 
-  --font-sans: var(--font-space-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-space-mono);
 }
 
 /* ── Light Mode ───────────────────────────────────────── */

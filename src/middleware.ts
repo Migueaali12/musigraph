@@ -5,11 +5,21 @@ const locales = ['es', 'en']
 const defaultLocale = 'es'
 
 function getLocale(request: NextRequest): string {
-  // Simple check for accept-language
   const acceptLanguage = request.headers.get('accept-language')
   if (acceptLanguage) {
-    if (acceptLanguage.startsWith('en')) {
-      return 'en'
+    const parsed = acceptLanguage
+      .split(',')
+      .map((lang) => {
+        const [code, quality = 'q=1.0'] = lang.trim().split(';')
+        const q = parseFloat(quality.split('=')[1]) || 1.0
+        return { code: code.split('-')[0], quality: q }
+      })
+      .sort((a, b) => b.quality - a.quality)
+    
+    for (const { code } of parsed) {
+      if (locales.includes(code)) {
+        return code
+      }
     }
   }
   return defaultLocale

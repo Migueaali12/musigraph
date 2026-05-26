@@ -61,18 +61,18 @@ export default function TestPage() {
     setIsLoading(true)
     setResults([])
 
-    // Test de conectividad básica
-    await runTest("Test de Conectividad", () => sparqlService.testConnection())
+    // Test de conectividad básica — now via Route Handler
+    await runTest("Test de Conectividad (via Route Handler)", async () => {
+      const res = await fetch("/api/sparql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getTopBands", params: {} }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    })
 
-    // Test simple con consulta conocida
-    await runTest("Consulta Simple", () => sparqlService.testSimpleQuery())
-
-    // Test con artistas conocidos
-    await runTest("Buscar Beatles (ID conocido)", () =>
-      sparqlService.searchBeatles()
-    )
-
-    // Test con lista de artistas famosos
+    // Test Top Bands (IDs conocidos)
     await runTest("Top Bands (IDs conocidos)", () =>
       sparqlService.getTopBands()
     )
@@ -102,8 +102,14 @@ export default function TestPage() {
         { name: searchTerm, genre: "Q11399" },
         { limit: 5 }
       )
-      // Ejecutar la consulta construida
-      const response = await sparqlService.query(query)
+      // Execute via Route Handler
+      const res = await fetch("/api/sparql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "searchArtist", params: { name: searchTerm, genre: "Q11399" } }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const response = await res.json()
       return { query, response }
     })
 
@@ -233,9 +239,7 @@ export default function TestPage() {
   }
 
   const clearCacheAndResults = () => {
-    sparqlService.clearCache()
     setResults([])
-    console.log("[CLEAR] Cache limpiado")
   }
 
   const testSpecificArtist = async () => {
@@ -264,22 +268,26 @@ export default function TestPage() {
     setIsLoading(true)
     setResults([])
 
-    // Solo tests básicos de conectividad
-    await runTest("Test de Conectividad", () =>
-      sparqlService.testConnection()
-    )
+    // Basic connectivity via Route Handler
+    await runTest("Test de Conectividad (Route Handler)", async () => {
+      const res = await fetch("/api/sparql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getTopBands", params: {} }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    })
 
-    await runTest("Consulta Simple", () => sparqlService.testSimpleQuery())
-
-    await runTest("Beatles (ID Conocido)", () =>
-      sparqlService.searchBeatles()
+    await runTest("Top Bands (IDs Conocidos)", () =>
+      sparqlService.getTopBands()
     )
 
     setIsLoading(false)
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-deep-night via-acoustic-gray to-deep-night p-8'>
+    <div className='min-h-screen bg-linear-to-br from-deep-night via-acoustic-gray to-deep-night p-8'>
       <div className='max-w-6xl mx-auto'>
         {/* Header */}
         <div className='text-center mb-8'>

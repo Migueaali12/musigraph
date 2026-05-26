@@ -198,8 +198,7 @@ export async function fetchDeepCollaborationsFromMusicBrainz(
           }
         })
       }
-    } catch (err) {
-      // Ignorar errores individuales de release
+    } catch {
       continue
     }
   }
@@ -262,9 +261,10 @@ export async function fetchDeepInfluencesFromMusicBrainz(
           }
         )
       }
-    } catch (err) {
+    } catch {
       continue
     }
   }
   return influences
 }
+

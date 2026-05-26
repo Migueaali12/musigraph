@@ -173,7 +173,7 @@ class QueryBuilder {
     )
   }
 
-  buildInfluenceNetworkQuery(artistId: string, depth: number = 2): string {
+  buildInfluenceNetworkQuery(artistId: string): string {
     return (
       this.basePrefixes +
       `

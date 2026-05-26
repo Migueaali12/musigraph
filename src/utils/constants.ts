@@ -78,6 +78,16 @@ export const SEARCH_FILTERS = {
   ],
 } as const
 
+// Quick search suggestions shown on the homepage
+export const QUICK_SEARCH_TERMS = [
+  "The Beatles",
+  "Pink Floyd",
+  "Queen",
+  "Bob Dylan",
+  "Elvis Presley",
+  "Michael Jackson",
+] as const
+
 // API Configuration
 export const API_CONFIG = {
   WIKIDATA_ENDPOINT: "https://query.wikidata.org/sparql",
