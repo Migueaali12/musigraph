@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Space_Mono } from "next/font/google"
+import { ThemeProvider } from "next-themes"
 import "./globals.css"
 
 const spaceMono = Space_Mono({
@@ -20,8 +21,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang='es'>
-      <body className={`${spaceMono.className} ${spaceMono.variable} antialiased`}>{children}</body>
+    <html lang='es' suppressHydrationWarning>
+      <body className={`${spaceMono.className} ${spaceMono.variable} antialiased`}>
+        <ThemeProvider attribute='class' defaultTheme='system' enableSystem storageKey='musigraph-theme'>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

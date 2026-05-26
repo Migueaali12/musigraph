@@ -1,12 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
 import { SearchBar } from "@/components/search/SearchBar"
 import { SearchResults } from "@/components/search/SearchResults"
 import { ArtistProfile } from "@/components/artist/ArtistProfile"
 import { AppStats } from "@/components/common/AppStats"
+import { Header } from "@/components/common/Header"
 import { sparqlService, type ArtistInfo } from "@/services/sparqlService"
 
 interface SearchFilters {
@@ -16,19 +15,13 @@ interface SearchFilters {
   artistType?: "solo" | "band" | "composer"
 }
 
-const SPARQL_ENDPOINTS = [
-  { label: "Wikidata", value: "https://query.wikidata.org/sparql" },
-  { label: "DBpedia", value: "https://dbpedia.org/sparql" },
-]
-
 export default function Home() {
   const [searchResults, setSearchResults] = useState<ArtistInfo[]>([])
   const [selectedArtist, setSelectedArtist] = useState<ArtistInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [endpoint, setEndpoint] = useState(SPARQL_ENDPOINTS[0].value)
+  const [endpoint, setEndpoint] = useState("https://query.wikidata.org/sparql")
 
-  // Limpiar artista y resultados al cambiar endpoint
   function handleEndpointChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setEndpoint(e.target.value)
     setSelectedArtist(null)
@@ -52,7 +45,6 @@ export default function Home() {
     setSelectedArtist(null)
 
     try {
-      // Pasar los filtros a la búsqueda
       const results = await sparqlService.searchArtist(term, filters, endpoint)
       setSearchResults(results)
     } catch (error) {
@@ -69,13 +61,11 @@ export default function Home() {
 
   const handleBack = () => {
     setSelectedArtist(null)
-    // Mantener los resultados de búsqueda cuando regresamos
   }
 
-  // Si hay un artista seleccionado, mostrar su perfil
   if (selectedArtist) {
     return (
-      <div className='min-h-screen bg-gradient-to-br from-deep-night via-acoustic-gray to-deep-night p-6'>
+      <div className='min-h-screen bg-background text-foreground transition-colors duration-300 p-6'>
         <ArtistProfile
           artist={selectedArtist}
           onBack={handleBack}
@@ -86,51 +76,17 @@ export default function Home() {
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-deep-night via-acoustic-gray to-deep-night'>
-      {/* Header con Logo y selector de endpoint */}
-      <header className='flex justify-between items-center py-8 px-6'>
-        <div className='flex items-center gap-4'>
-          <div className='relative'>
-            <Image
-              src='/musigraph-logo-vector.svg'
-              alt='MusiGraph Logo'
-              width={60}
-              height={60}
-              className='drop-shadow-lg'
-            />
-          </div>
-          <h1 className='text-3xl font-bold text-white'>
-            Musi<span className='text-coral-vibrant'>Graph</span>
-          </h1>
-        </div>
-        {/* Selector de endpoint */}
-        <div className='flex items-center gap-4'>
-          <label htmlFor='endpoint-select' className='text-white text-sm mr-2'>
-            Endpoint:
-          </label>
-          <select
-            id='endpoint-select'
-            value={endpoint}
-            onChange={handleEndpointChange}
-            className='bg-white/10 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
-          >
-            {SPARQL_ENDPOINTS.map((opt) => (
-              <option key={opt.value} value={opt.value} className='text-black'>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </header>
+    <div className='min-h-screen bg-background text-foreground transition-colors duration-300'>
+      <Header endpoint={endpoint} onEndpointChange={handleEndpointChange} />
 
       {/* Contenido Principal */}
       <main className='flex flex-col items-center justify-center px-6 py-12 max-w-6xl mx-auto'>
         {/* Título Principal */}
         <div className='text-center mb-12'>
-          <h2 className='text-4xl md:text-5xl font-extrabold text-white mb-4'>
+          <h2 className='text-4xl md:text-5xl font-extrabold text-foreground mb-4'>
             Explora el Universo Musical
           </h2>
-          <p className='text-lg text-gray-300 max-w-2xl'>
+          <p className='text-lg text-muted max-w-2xl'>
             Descubre relaciones entre artistas, géneros musicales, influencias y
             colaboraciones a través de datos semánticos conectados.
           </p>
@@ -153,7 +109,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className='text-center py-8 text-gray-400'>
+      <footer className='text-center py-8 text-muted'>
         <p className='mb-2'>
           Datos proporcionados por{" "}
           {endpoint.includes("dbpedia") ? (

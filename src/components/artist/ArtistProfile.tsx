@@ -22,6 +22,7 @@ import {
   BarChart3,
   Tag,
   Users,
+  ArrowLeft,
 } from "lucide-react"
 import { fetchDiscographyFromMusicBrainz } from "@/services/musicbrainzService"
 
@@ -53,7 +54,6 @@ export function ArtistProfile({
       setIsLoading(true)
       try {
         if (detailSource === "musicbrainz" && artist.mbid) {
-          // Solo discografía desde MusicBrainz
           const mbDiscography = await fetchDiscographyFromMusicBrainz(
             artist.mbid
           )
@@ -92,7 +92,6 @@ export function ArtistProfile({
     collaborations
   )
 
-  // Selector de fuente de datos
   const canShowMusicBrainz = Boolean(artist.mbid)
 
   return (
@@ -100,13 +99,13 @@ export function ArtistProfile({
       {/* Selector de fuente de datos */}
       <div className='flex justify-end mb-4'>
         <div className='flex items-center gap-2'>
-          <span className='text-gray-400 text-sm'>Fuente de datos:</span>
+          <span className='text-muted text-sm'>Fuente de datos:</span>
           <select
             value={detailSource}
             onChange={(e) =>
               setDetailSource(e.target.value as "endpoint" | "musicbrainz")
             }
-            className='bg-white/10 text-white rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+            className='bg-surface border border-border text-foreground rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
             disabled={!canShowMusicBrainz}
           >
             <option value='endpoint'>
@@ -122,27 +121,15 @@ export function ArtistProfile({
       <div className='flex items-center gap-4 mb-8'>
         <button
           onClick={onBack}
-          className='flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors'
+          className='flex items-center gap-2 px-4 py-2 bg-surface border border-border text-foreground rounded-lg hover:bg-surface-elevated transition-colors'
         >
-          <svg
-            className='w-5 h-5'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M15 19l-7-7 7-7'
-            />
-          </svg>
+          <ArrowLeft className='w-4 h-4' />
           Volver a búsqueda
         </button>
       </div>
 
       {/* Información principal del artista */}
-      <div className='bg-white/5 backdrop-blur-sm rounded-3xl p-8 mb-8 border border-white/10'>
+      <div className='bg-surface border border-border rounded-3xl p-8 mb-8 shadow-sm'>
         <div className='flex flex-col lg:flex-row items-start gap-8'>
           {/* Imagen del artista */}
           <div className='flex-shrink-0'>
@@ -159,19 +146,7 @@ export function ArtistProfile({
                 />
               ) : (
                 <div className='w-full h-full bg-gradient-energy rounded-2xl flex items-center justify-center'>
-                  <svg
-                    className='w-16 h-16 text-white'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'
-                    />
-                  </svg>
+                  <Music className='w-16 h-16 text-white' />
                 </div>
               )}
             </div>
@@ -179,7 +154,7 @@ export function ArtistProfile({
 
           {/* Información básica */}
           <div className='flex-1'>
-            <h1 className='text-4xl font-bold text-white mb-4'>
+            <h1 className='text-4xl font-bold text-foreground mb-4'>
               {artist.name}
             </h1>
 
@@ -188,15 +163,15 @@ export function ArtistProfile({
               <div className='space-y-3'>
                 {artist.country && (
                   <div className='flex items-center gap-2'>
-                    <span className='text-gray-400 inline-flex items-center gap-1'><MapPin className="w-4 h-4" /> País:</span>
-                    <span className='text-white'>{artist.country}</span>
+                    <span className='text-muted inline-flex items-center gap-1'><MapPin className="w-4 h-4" /> País:</span>
+                    <span className='text-foreground'>{artist.country}</span>
                   </div>
                 )}
 
                 {artist.birthDate && (
                   <div className='flex items-center gap-2'>
-                    <span className='text-gray-400 inline-flex items-center gap-1'><Calendar className="w-4 h-4" /> Año:</span>
-                    <span className='text-white'>
+                    <span className='text-muted inline-flex items-center gap-1'><Calendar className="w-4 h-4" /> Año:</span>
+                    <span className='text-foreground'>
                       {new Date(artist.birthDate).getFullYear()}
                     </span>
                   </div>
@@ -204,12 +179,12 @@ export function ArtistProfile({
 
                 {artist.instruments.length > 0 && (
                   <div className='flex items-start gap-2'>
-                    <span className='text-gray-400 inline-flex items-center gap-1'><Music className="w-4 h-4" /> Instrumentos:</span>
+                    <span className='text-muted inline-flex items-center gap-1'><Music className="w-4 h-4" /> Instrumentos:</span>
                     <div className='flex flex-wrap gap-1'>
                       {artist.instruments.map((instrument, index) => (
                         <span
                           key={index}
-                          className='px-2 py-1 bg-blue-harmonic/20 text-blue-harmonic text-xs rounded-full'
+                          className='px-2 py-1 bg-blue-harmonic/15 text-blue-harmonic text-xs rounded-full font-medium'
                         >
                           {instrument}
                         </span>
@@ -224,22 +199,22 @@ export function ArtistProfile({
                 {!isLoading && (
                   <>
                     <div className='flex items-center gap-2'>
-                      <span className='text-gray-400 inline-flex items-center gap-1'><Disc className="w-4 h-4" /> Álbumes:</span>
-                      <span className='text-white font-semibold'>
+                      <span className='text-muted inline-flex items-center gap-1'><Disc className="w-4 h-4" /> Álbumes:</span>
+                      <span className='text-foreground font-semibold'>
                         {processedData.statistics.totalAlbums}
                       </span>
                     </div>
 
                     <div className='flex items-center gap-2'>
-                      <span className='text-gray-400 inline-flex items-center gap-1'><Lightbulb className="w-4 h-4" /> Influencias:</span>
-                      <span className='text-white font-semibold'>
+                      <span className='text-muted inline-flex items-center gap-1'><Lightbulb className="w-4 h-4" /> Influencias:</span>
+                      <span className='text-foreground font-semibold'>
                         {processedData.statistics.totalInfluences}
                       </span>
                     </div>
 
                     <div className='flex items-center gap-2'>
-                      <span className='text-gray-400 inline-flex items-center gap-1'><Handshake className="w-4 h-4" /> Colaboraciones:</span>
-                      <span className='text-white font-semibold'>
+                      <span className='text-muted inline-flex items-center gap-1'><Handshake className="w-4 h-4" /> Colaboraciones:</span>
+                      <span className='text-foreground font-semibold'>
                         {processedData.statistics.totalCollaborations}
                       </span>
                     </div>
@@ -251,14 +226,14 @@ export function ArtistProfile({
             {/* Géneros */}
             {artist.genres.length > 0 && (
               <div className='mb-6'>
-                <h3 className='text-lg font-semibold text-white mb-3'>
+                <h3 className='text-lg font-semibold text-foreground mb-3'>
                   Géneros Musicales
                 </h3>
                 <div className='flex flex-wrap gap-2'>
                   {artist.genres.map((genre, index) => (
                     <span
                       key={index}
-                      className='px-3 py-1 bg-coral-vibrant/20 text-coral-vibrant rounded-full'
+                      className='px-3 py-1 bg-coral-vibrant/15 text-coral-vibrant rounded-full font-medium'
                     >
                       {genre}
                     </span>
@@ -272,7 +247,7 @@ export function ArtistProfile({
 
       {/* Tabs de navegación */}
       <div className='mb-8'>
-        <div className='flex space-x-1 bg-white/5 backdrop-blur-sm rounded-2xl p-1'>
+        <div className='flex space-x-1 bg-surface border border-border rounded-2xl p-1'>
           {[
             { id: "overview", label: "Resumen", icon: <BarChart3 className="w-4 h-4" /> },
             { id: "discography", label: "Discografía", icon: <Disc className="w-4 h-4" /> },
@@ -285,7 +260,7 @@ export function ArtistProfile({
               className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-1 ${
                 activeTab === tab.id
                   ? "bg-coral-vibrant text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-muted hover:text-foreground hover:bg-surface-elevated"
               }`}
             >
               {tab.icon}
@@ -296,11 +271,11 @@ export function ArtistProfile({
       </div>
 
       {/* Contenido de las tabs */}
-      <div className='bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10'>
+      <div className='bg-surface border border-border rounded-3xl p-8 shadow-sm'>
         {isLoading ? (
           <div className='text-center py-12'>
             <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-coral-vibrant mx-auto mb-4'></div>
-            <p className='text-white'>Cargando información del artista...</p>
+            <p className='text-foreground'>Cargando información del artista...</p>
           </div>
         ) : (
           <>
@@ -323,7 +298,8 @@ export function ArtistProfile({
   )
 }
 
-// Componentes de las tabs
+// ── Tab Components ──────────────────────────────────────────
+
 function OverviewTab({
   artist,
   processedData,
@@ -334,8 +310,8 @@ function OverviewTab({
   return (
     <div className='space-y-8'>
       <div>
-        <h3 className='text-2xl font-bold text-white mb-4'>Resumen General</h3>
-        <p className='text-gray-300 text-lg leading-relaxed'>
+        <h3 className='text-2xl font-bold text-foreground mb-4'>Resumen General</h3>
+        <p className='text-muted text-lg leading-relaxed'>
           Explora la carrera musical de <strong>{artist.name}</strong>,
           {artist.country && ` originario de ${artist.country},`}
           {artist.birthDate &&
@@ -376,21 +352,13 @@ function DiscographyTab({ discography }: { discography: AlbumInfo[] }) {
   if (discography.length === 0) {
     return (
       <div className='text-center py-12'>
-        <div className='w-16 h-16 mx-auto mb-4 bg-gray-600 rounded-full flex items-center justify-center'>
-          <svg
-            className='w-8 h-8 text-gray-400'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <circle cx='12' cy='12' r='10' />
-            <circle cx='12' cy='12' r='3' />
-          </svg>
+        <div className='w-16 h-16 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
+          <Disc className='w-8 h-8 text-muted' />
         </div>
-        <h4 className='text-lg font-semibold text-white mb-2'>
+        <h4 className='text-lg font-semibold text-foreground mb-2'>
           Sin discografía disponible
         </h4>
-        <p className='text-gray-400'>
+        <p className='text-muted'>
           No encontramos álbumes registrados para este artista en Wikidata.
         </p>
       </div>
@@ -399,27 +367,19 @@ function DiscographyTab({ discography }: { discography: AlbumInfo[] }) {
 
   return (
     <div>
-      <h3 className='text-2xl font-bold text-white mb-6'>Discografía</h3>
+      <h3 className='text-2xl font-bold text-foreground mb-6'>Discografía</h3>
       <div className='space-y-4'>
         {discography.map((album, index) => (
           <div
             key={index}
-            className='flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors'
+            className='flex items-center gap-4 p-4 bg-surface-elevated border border-border rounded-xl hover:border-border/60 transition-colors'
           >
-            <div className='w-12 h-12 bg-gradient-ocean rounded-lg flex items-center justify-center'>
-              <svg
-                className='w-6 h-6 text-white'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <circle cx='12' cy='12' r='10' />
-                <circle cx='12' cy='12' r='3' />
-              </svg>
+            <div className='w-12 h-12 bg-gradient-ocean rounded-lg flex items-center justify-center flex-shrink-0'>
+              <Disc className='w-6 h-6 text-white' />
             </div>
-            <div className='flex-1'>
-              <h4 className='font-semibold text-white'>{album.title}</h4>
-              <div className='flex items-center gap-4 text-sm text-gray-400'>
+            <div className='flex-1 min-w-0'>
+              <h4 className='font-semibold text-foreground'>{album.title}</h4>
+              <div className='flex items-center gap-4 text-sm text-muted'>
                 {album.releaseDate && (
                   <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" /> {new Date(album.releaseDate).getFullYear()}</span>
                 )}
@@ -437,25 +397,13 @@ function InfluencesTab({ influences }: { influences: ArtistInfo[] }) {
   if (influences.length === 0) {
     return (
       <div className='text-center py-12'>
-        <div className='w-16 h-16 mx-auto mb-4 bg-gray-600 rounded-full flex items-center justify-center'>
-          <svg
-            className='w-8 h-8 text-gray-400'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z'
-            />
-          </svg>
+        <div className='w-16 h-16 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
+          <Lightbulb className='w-8 h-8 text-muted' />
         </div>
-        <h4 className='text-lg font-semibold text-white mb-2'>
+        <h4 className='text-lg font-semibold text-foreground mb-2'>
           Sin influencias registradas
         </h4>
-        <p className='text-gray-400'>
+        <p className='text-muted'>
           No encontramos información sobre las influencias de este artista en
           Wikidata.
         </p>
@@ -465,18 +413,18 @@ function InfluencesTab({ influences }: { influences: ArtistInfo[] }) {
 
   return (
     <div>
-      <h3 className='text-2xl font-bold text-white mb-6'>
+      <h3 className='text-2xl font-bold text-foreground mb-6'>
         Influencias Musicales
       </h3>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
         {influences.map((influence, index) => (
           <div
             key={index}
-            className='p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors'
+            className='p-4 bg-surface-elevated border border-border rounded-xl hover:border-border/60 transition-colors'
           >
-            <h4 className='font-semibold text-white mb-2'>{influence.name}</h4>
+            <h4 className='font-semibold text-foreground mb-2'>{influence.name}</h4>
             {influence.country && (
-              <p className='text-sm text-gray-400 mb-2 inline-flex items-center gap-1'>
+              <p className='text-sm text-muted mb-2 inline-flex items-center gap-1'>
                 <MapPin className="w-4 h-4" /> {influence.country}
               </p>
             )}
@@ -485,7 +433,7 @@ function InfluencesTab({ influences }: { influences: ArtistInfo[] }) {
                 {influence.genres.slice(0, 3).map((genre, genreIndex) => (
                   <span
                     key={genreIndex}
-                    className='px-2 py-1 bg-turquoise-musical/20 text-turquoise-musical text-xs rounded-full'
+                    className='px-2 py-1 bg-turquoise-musical/15 text-turquoise-musical text-xs rounded-full font-medium'
                   >
                     {genre}
                   </span>
@@ -507,25 +455,13 @@ function CollaborationsTab({
   if (collaborations.length === 0) {
     return (
       <div className='text-center py-12'>
-        <div className='w-16 h-16 mx-auto mb-4 bg-gray-600 rounded-full flex items-center justify-center'>
-          <svg
-            className='w-8 h-8 text-gray-400'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
-            />
-          </svg>
+        <div className='w-16 h-16 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
+          <Users className='w-8 h-8 text-muted' />
         </div>
-        <h4 className='text-lg font-semibold text-white mb-2'>
+        <h4 className='text-lg font-semibold text-foreground mb-2'>
           Sin colaboraciones registradas
         </h4>
-        <p className='text-gray-400'>
+        <p className='text-muted'>
           No encontramos colaboraciones registradas para este artista en
           Wikidata.
         </p>
@@ -535,15 +471,15 @@ function CollaborationsTab({
 
   return (
     <div>
-      <h3 className='text-2xl font-bold text-white mb-6'>Colaboraciones</h3>
+      <h3 className='text-2xl font-bold text-foreground mb-6'>Colaboraciones</h3>
       <div className='space-y-4'>
         {collaborations.map((collab, index) => (
           <div
             key={index}
-            className='p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors'
+            className='p-4 bg-surface-elevated border border-border rounded-xl hover:border-border/60 transition-colors'
           >
-            <h4 className='font-semibold text-white mb-2'>{collab.song}</h4>
-            <div className='flex items-center gap-4 text-sm text-gray-400'>
+            <h4 className='font-semibold text-foreground mb-2'>{collab.song}</h4>
+            <div className='flex items-center gap-4 text-sm text-muted'>
               <span className="inline-flex items-center gap-1"><Users className="w-4 h-4" /> Con {collab.artist2}</span>
               {collab.releaseDate && (
                 <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" /> {new Date(collab.releaseDate).getFullYear()}</span>

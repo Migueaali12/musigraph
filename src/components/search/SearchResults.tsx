@@ -24,7 +24,7 @@ export function SearchResults({
       <div className='text-center py-12'>
         <div className='inline-flex items-center gap-3'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-coral-vibrant'></div>
-          <span className='text-white text-lg'>
+          <span className='text-foreground text-lg'>
             Buscando en el universo musical...
           </span>
         </div>
@@ -52,10 +52,10 @@ export function SearchResults({
               />
             </svg>
           </div>
-          <h3 className='text-2xl font-bold text-white mb-2'>
+          <h3 className='text-2xl font-bold text-foreground mb-2'>
             Descubre el Universo Musical
           </h3>
-          <p className='text-gray-400 max-w-md mx-auto'>
+          <p className='text-muted max-w-md mx-auto'>
             Busca cualquier artista, banda o compositor para explorar sus
             conexiones musicales, influencias y colaboraciones.
           </p>
@@ -68,9 +68,9 @@ export function SearchResults({
     return (
       <div className='text-center py-12'>
         <div className='mb-8'>
-          <div className='w-24 h-24 mx-auto mb-4 bg-gray-600 rounded-full flex items-center justify-center'>
+          <div className='w-24 h-24 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
             <svg
-              className='w-12 h-12 text-gray-400'
+              className='w-12 h-12 text-muted'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -83,14 +83,14 @@ export function SearchResults({
               />
             </svg>
           </div>
-          <h3 className='text-xl font-bold text-white mb-2'>
+          <h3 className='text-xl font-bold text-foreground mb-2'>
             No encontramos resultados para &ldquo;{searchTerm}&rdquo;
           </h3>
-          <p className='text-gray-400 max-w-md mx-auto mb-6'>
+          <p className='text-muted max-w-md mx-auto mb-6'>
             Intenta con un nombre diferente o revisa la ortografía. También
             puedes usar términos en inglés.
           </p>
-          <div className='space-y-2 text-sm text-gray-500'>
+          <div className='space-y-2 text-sm text-muted'>
             <p className="flex items-center justify-center gap-1">
               <Lightbulb className="w-4 h-4" /> <strong>Sugerencias:</strong>
             </p>
@@ -109,10 +109,10 @@ export function SearchResults({
   return (
     <div>
       <div className='mb-6'>
-        <h2 className='text-2xl font-bold text-white mb-2'>
+        <h2 className='text-2xl font-bold text-foreground mb-2'>
           Resultados para &ldquo;{searchTerm}&rdquo;
         </h2>
-        <p className='text-gray-400'>
+        <p className='text-muted'>
           Encontrados {results.length} artista{results.length !== 1 ? "s" : ""}
         </p>
       </div>
@@ -145,7 +145,7 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
   return (
     <div
       onClick={onClick}
-      className='bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-coral-vibrant/50 hover:bg-white/10 transition-all duration-300 cursor-pointer group'
+      className='bg-surface border border-border rounded-2xl p-6 hover:border-coral-vibrant/50 hover:shadow-md transition-all duration-300 cursor-pointer group'
     >
       {/* Imagen del artista */}
       <div className='relative w-24 h-24 mx-auto mb-4'>
@@ -180,18 +180,18 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
 
       {/* Información del artista */}
       <div className='text-center'>
-        <h3 className='text-lg font-semibold text-white mb-2 group-hover:text-coral-vibrant transition-colors'>
+        <h3 className='text-lg font-semibold text-foreground mb-2 group-hover:text-coral-vibrant transition-colors'>
           {artist.name}
         </h3>
 
         {/* País */}
         {artist.country && (
-          <p className='text-sm text-gray-400 mb-2 flex items-center justify-center gap-1'><MapPin className="w-4 h-4" /> {artist.country}</p>
+          <p className='text-sm text-muted mb-2 flex items-center justify-center gap-1'><MapPin className="w-4 h-4" /> {artist.country}</p>
         )}
 
         {/* Fecha */}
         {artist.birthDate && (
-          <p className='text-sm text-gray-400 mb-3 flex items-center justify-center gap-1'>
+          <p className='text-sm text-muted mb-3 flex items-center justify-center gap-1'>
             <Calendar className="w-4 h-4" /> {new Date(artist.birthDate).getFullYear()}
           </p>
         )}
@@ -203,13 +203,13 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
               {artist.genres.slice(0, 3).map((genre, index) => (
                 <span
                   key={index}
-                  className='px-2 py-1 bg-coral-vibrant/20 text-coral-vibrant text-xs rounded-full'
+                  className='px-2 py-1 bg-coral-vibrant/15 text-coral-vibrant text-xs rounded-full font-medium'
                 >
                   {genre}
                 </span>
               ))}
               {artist.genres.length > 3 && (
-                <span className='px-2 py-1 bg-gray-600 text-gray-300 text-xs rounded-full'>
+                <span className='px-2 py-1 bg-surface-elevated text-muted text-xs rounded-full'>
                   +{artist.genres.length - 3}
                 </span>
               )}
@@ -219,7 +219,7 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
 
         {/* Instrumentos */}
         {artist.instruments.length > 0 && (
-          <div className='text-xs text-gray-500 flex items-center justify-center gap-1'>
+          <div className='text-xs text-muted flex items-center justify-center gap-1'>
             <Music className="w-4 h-4" /> {artist.instruments.slice(0, 2).join(", ")}
             {artist.instruments.length > 2 && "..."}
           </div>
