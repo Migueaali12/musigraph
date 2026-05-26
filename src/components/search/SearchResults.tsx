@@ -4,6 +4,7 @@ import { useState } from "react"
 import { type ArtistInfo } from "@/services/sparqlService"
 import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import Image from "next/image"
+import { Lightbulb, MapPin, Calendar, Music } from "lucide-react"
 
 interface SearchResultsProps {
   results: ArtistInfo[]
@@ -90,8 +91,8 @@ export function SearchResults({
             puedes usar términos en inglés.
           </p>
           <div className='space-y-2 text-sm text-gray-500'>
-            <p>
-              💡 <strong>Sugerencias:</strong>
+            <p className="flex items-center justify-center gap-1">
+              <Lightbulb className="w-4 h-4" /> <strong>Sugerencias:</strong>
             </p>
             <p>
               • Intenta con &ldquo;The Beatles&rdquo; en lugar de
@@ -185,13 +186,13 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
 
         {/* País */}
         {artist.country && (
-          <p className='text-sm text-gray-400 mb-2'>📍 {artist.country}</p>
+          <p className='text-sm text-gray-400 mb-2 flex items-center justify-center gap-1'><MapPin className="w-4 h-4" /> {artist.country}</p>
         )}
 
         {/* Fecha */}
         {artist.birthDate && (
-          <p className='text-sm text-gray-400 mb-3'>
-            📅 {new Date(artist.birthDate).getFullYear()}
+          <p className='text-sm text-gray-400 mb-3 flex items-center justify-center gap-1'>
+            <Calendar className="w-4 h-4" /> {new Date(artist.birthDate).getFullYear()}
           </p>
         )}
 
@@ -218,8 +219,8 @@ function ArtistCard({ artist, onClick }: ArtistCardProps) {
 
         {/* Instrumentos */}
         {artist.instruments.length > 0 && (
-          <div className='text-xs text-gray-500'>
-            🎵 {artist.instruments.slice(0, 2).join(", ")}
+          <div className='text-xs text-gray-500 flex items-center justify-center gap-1'>
+            <Music className="w-4 h-4" /> {artist.instruments.slice(0, 2).join(", ")}
             {artist.instruments.length > 2 && "..."}
           </div>
         )}

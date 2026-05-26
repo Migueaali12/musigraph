@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { Trash2, XCircle, CheckCircle } from "lucide-react"
 import { sparqlService } from "@/services/sparqlService"
 import { queryBuilder } from "@/services/queryBuilder"
 import { dataProcessor } from "@/services/dataProcessor"
@@ -34,14 +35,14 @@ export default function TestPage() {
     const startTime = Date.now()
     setIsLoading(true)
     try {
-      console.log(`🧪 Ejecutando: ${testName}`)
+      console.log(`[TEST] Ejecutando: ${testName}`)
       const data = await testFunction()
       const duration = Date.now() - startTime
-      console.log(`✅ ${testName} completado en ${duration}ms`, data)
+      console.log(`[PASS] ${testName} completado en ${duration}ms`, data)
       setResults((prev) => [...prev, { type: testName, data, duration }])
     } catch (error) {
       const duration = Date.now() - startTime
-      console.error(`❌ Error en ${testName}:`, error)
+      console.error(`[FAIL] Error en ${testName}:`, error)
       setResults((prev) => [
         ...prev,
         {
@@ -234,7 +235,7 @@ export default function TestPage() {
   const clearCacheAndResults = () => {
     sparqlService.clearCache()
     setResults([])
-    console.log("🗑️ Cache limpiado")
+    console.log("[CLEAR] Cache limpiado")
   }
 
   const testSpecificArtist = async () => {
@@ -264,13 +265,13 @@ export default function TestPage() {
     setResults([])
 
     // Solo tests básicos de conectividad
-    await runTest("🔌 Test de Conectividad", () =>
+    await runTest("Test de Conectividad", () =>
       sparqlService.testConnection()
     )
 
-    await runTest("📊 Consulta Simple", () => sparqlService.testSimpleQuery())
+    await runTest("Consulta Simple", () => sparqlService.testSimpleQuery())
 
-    await runTest("🎵 Beatles (ID Conocido)", () =>
+    await runTest("Beatles (ID Conocido)", () =>
       sparqlService.searchBeatles()
     )
 
@@ -348,10 +349,10 @@ export default function TestPage() {
               </button>
               <button
                 onClick={clearCacheAndResults}
-                className='bg-red-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors'
+                className='bg-red-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors flex items-center gap-1'
                 title='Limpiar cache y resultados'
               >
-                🗑️ Cache
+                <Trash2 className="w-4 h-4" /> Cache
               </button>
             </div>
           </div>
@@ -381,9 +382,9 @@ export default function TestPage() {
                       {result.duration}ms
                     </span>
                     {result.error ? (
-                      <span className='text-red-400 text-sm'>❌ Error</span>
+                      <span className='text-red-400 text-sm flex items-center gap-1'><XCircle className="w-4 h-4" /> Error</span>
                     ) : (
-                      <span className='text-green-400 text-sm'>✅ Exitoso</span>
+                      <span className='text-green-400 text-sm flex items-center gap-1'><CheckCircle className="w-4 h-4" /> Exitoso</span>
                     )}
                   </div>
                 </div>
