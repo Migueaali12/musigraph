@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { FlaskConical } from "lucide-react"
 import { SearchBar } from "@/components/search/SearchBar"
 import { SearchResults } from "@/components/search/SearchResults"
 import { ArtistProfile } from "@/components/artist/ArtistProfile"
@@ -121,15 +120,6 @@ export default function Home() {
               </option>
             ))}
           </select>
-          {/* Enlace a tests (solo en desarrollo) */}
-          <div className='hidden md:block'>
-            <Link
-              href='/test'
-              className='px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors text-sm flex items-center gap-1'
-            >
-              <FlaskConical className="w-4 h-4" /> Tests
-            </Link>
-          </div>
         </div>
       </header>
 
