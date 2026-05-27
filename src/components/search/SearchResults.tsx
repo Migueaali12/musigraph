@@ -85,9 +85,9 @@ export function SearchResults({
               />
             </svg>
           </div>
-          <h3 className='text-xl font-bold text-foreground mb-2'>
-            {dict.results.noResults.replace("{searchTerm}", searchTerm)}
-          </h3>
+        <h3 className='text-xl font-bold text-foreground mb-2 font-sans'>
+          {dict.results.noResults.replace("{searchTerm}", searchTerm)}
+        </h3>
           <p className='text-muted max-w-md mx-auto mb-6'>
             {dict.results.noResultsDescription}
           </p>

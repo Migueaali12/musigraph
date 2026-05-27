@@ -14,7 +14,7 @@ export function CollaborationsTab({ collaborations, dict }: CollaborationsTabPro
         <div className='w-16 h-16 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
           <Users className='w-8 h-8 text-muted' />
         </div>
-        <h4 className='text-lg font-semibold text-foreground mb-2'>
+        <h4 className='text-lg font-semibold text-foreground mb-2 font-sans'>
           {dict.artist.noCollaborations}
         </h4>
         <p className='text-muted'>{dict.artist.noCollaborationsDesc}</p>
