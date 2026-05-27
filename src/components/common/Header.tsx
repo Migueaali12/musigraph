@@ -5,6 +5,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Globe, ChevronDown, Check } from "lucide-react"
 import { ThemeToggle } from "./ThemeToggle"
+import { GitHub } from "../Github"
 import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
 
 interface HeaderProps {
@@ -159,6 +160,16 @@ export function Header({
             </div>
           )}
         </div>
+
+        <a
+          href='https://github.com/Migueaali12/musigraph'
+          target='_blank'
+          rel='noopener noreferrer'
+          className='flex items-center justify-center bg-surface border border-border text-foreground rounded-lg p-2 hover:border-coral-vibrant/50 hover:text-coral-vibrant transition-colors focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+          aria-label='View source on GitHub'
+        >
+          <GitHub className='w-5 h-5' />
+        </a>
 
         <ThemeToggle />
       </div>
