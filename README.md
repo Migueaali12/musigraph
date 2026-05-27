@@ -38,31 +38,38 @@ MusiGraph is a web application that explores the musical universe through **sema
 
 ## Features
 
-### Current
+### Implemented
 
 - **Artist Search** — Look up any musician or band and retrieve structured information
-- **SPARQL Integration** — Direct queries to Wikidata Query Service for real-time data
+- **SPARQL Integration** — Direct queries to Wikidata Query Service via API route proxy
 - **Artist Profiles** — Display biographical data, genres, instruments, and origins
+- **Tabbed Artist View** — Overview, Discography, Influences, and Collaborations tabs
 - **Responsive UI** — Built with Tailwind CSS for a consistent experience across devices
+- **Internationalization (i18n)** — English and Spanish language support via `[lang]` routing
+- **Dark/Light Theme** — Theme toggle with `next-themes` for user preference
+- **Filter Panel** — Advanced search filters for genre, decade, country, and artist type
+- **Error Boundary** — Graceful error handling with fallback UI
+- **API Route Proxy** — `/api/sparql` route to handle SPARQL queries server-side
 
 ### Planned
 
-- **Influence Network** — Interactive graph showing musical influences between artists
-- **Discography Timeline** — Visual timeline of album releases
+- **Influence Network Graph** — Interactive force-directed graph showing musical influences
+- **Discography Timeline** — Visual timeline chart of album releases
 - **Collaboration Explorer** — Map collaborations and "degrees of separation"
 - **Genre Evolution** — Track how genres emerge and branch over time
 - **Geographic Mapping** — Explore musical scenes by region
-- **Advanced Filters** — Filter by genre, decade, country, and artist type
+- **Query Caching** — Cache for frequent SPARQL queries to improve performance
 
 ## Tech Stack
 
 | Category      | Technology                          |
 |---------------|-------------------------------------|
-| Framework     | [Next.js 15](https://nextjs.org/)   |
+| Framework     | [Next.js 15](https://nextjs.org/) (App Router) |
 | UI Library    | [React 19](https://react.dev/)      |
 | Language      | [TypeScript 5](https://www.typescriptlang.org/) |
 | Styling       | [Tailwind CSS 4](https://tailwindcss.com/) |
 | Icons         | [Lucide React](https://lucide.dev/) |
+| Theming       | [next-themes](https://github.com/pacocoursey/next-themes) |
 | Data Source   | [Wikidata SPARQL](https://query.wikidata.org/) |
 | Package Manager | [pnpm](https://pnpm.io/)          |
 
@@ -110,32 +117,59 @@ pnpm lint
 ```
 musigraph/
 ├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── layout.tsx          # Root layout
-│   │   └── page.tsx            # Home page
+│   ├── app/                        # Next.js App Router pages
+│   │   ├── [lang]/                 # i18n localized routes
+│   │   │   ├── layout.tsx          # Localized root layout
+│   │   │   ├── page.tsx            # Home page (server component)
+│   │   │   ├── error.tsx           # Error boundary
+│   │   │   ├── not-found.tsx       # 404 page
+│   │   │   └── test/               # Test/experiment page
+│   │   ├── api/
+│   │   │   └── sparql/
+│   │   │       └── route.ts        # SPARQL query API proxy
+│   │   ├── globals.css             # Global styles
+│   │   ├── favicon.ico
+│   │   └── page-new.tsx            # Alternate home page
 │   ├── components/
-│   │   ├── artist/             # Artist-related components
+│   │   ├── artist/                 # Artist-related components
 │   │   │   ├── ArtistProfile.tsx
-│   │   │   └── DiscographyView.tsx
-│   │   ├── common/             # Shared UI components
+│   │   │   └── tabs/
+│   │   │       ├── OverviewTab.tsx
+│   │   │       ├── DiscographyTab.tsx
+│   │   │       ├── InfluencesTab.tsx
+│   │   │       └── CollaborationsTab.tsx
+│   │   ├── common/                 # Shared UI components
 │   │   │   ├── AppStats.tsx
 │   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── Header.tsx
 │   │   │   ├── Loading.tsx
+│   │   │   ├── ThemeProvider.tsx
+│   │   │   ├── ThemeToggle.tsx
 │   │   │   └── WelcomeMessage.tsx
-│   │   └── search/             # Search-related components
-│   │       ├── SearchBar.tsx
-│   │       └── SearchResults.tsx
-│   ├── services/               # Data and query services
-│   │   ├── sparqlService.ts    # Wikidata SPARQL client
-│   │   ├── queryBuilder.ts     # Dynamic SPARQL query builder
-│   │   ├── dataProcessor.ts    # Response processing
-│   │   └── musicbrainzService.ts # MusicBrainz integration
-│   └── utils/                  # Utilities and constants
-│       ├── constants.ts
-│       └── sparqlQueries.ts    # Predefined SPARQL queries
-├── public/                     # Static assets
-│   └── musigraph-logo-vector.svg
-├── AGENTS.md                   # Project specification
+│   │   ├── home/
+│   │   │   └── HomeClient.tsx      # Home page client component
+│   │   ├── search/                 # Search-related components
+│   │   │   ├── FilterPanel.tsx
+│   │   │   ├── SearchBar.tsx
+│   │   │   └── SearchResults.tsx
+│   │   └── Github.tsx              # GitHub link component
+│   ├── dictionaries/               # i18n translation files
+│   │   ├── en.json
+│   │   ├── es.json
+│   │   └── getDictionary.ts
+│   ├── services/                   # Data and query services
+│   │   ├── sparqlService.ts        # Wikidata SPARQL client
+│   │   ├── queryBuilder.ts         # Dynamic SPARQL query builder
+│   │   ├── dataProcessor.ts        # Response processing
+│   │   └── musicbrainzService.ts   # MusicBrainz integration
+│   ├── utils/                      # Utilities and constants
+│   │   ├── constants.ts
+│   │   └── sparqlQueries.ts        # Predefined SPARQL queries
+│   └── middleware.ts               # Next.js middleware (i18n routing)
+├── public/                         # Static assets
+│   ├── musigraph-logo-vector.svg
+│   └── fonts/Inter/                # Inter font variants
+├── AGENTS.md                       # Project specification
 └── package.json
 ```
 
@@ -166,19 +200,29 @@ MusiGraph queries **Wikidata** (`https://query.wikidata.org/sparql`) for structu
 ## Architecture
 
 ```
-User Input → SearchBar → QueryBuilder → SPARQL Service → Wikidata
-                                                       ↓
-UI Rendering ← DataProcessor ← Response Processing ← Raw Results
+User Input → SearchBar/FilterPanel → QueryBuilder → SPARQL Service → /api/sparql → Wikidata
+                                                                                    ↓
+UI Rendering ← DataProcessor ← Response Processing ← Server Action ← Raw Results
 ```
+
+### Key Patterns
+- **Server/Client Components** — Server components for data fetching, client components for interactivity
+- **API Route Proxy** — `/api/sparql` proxies requests to Wikidata to avoid CORS issues
+- **i18n Routing** — `[lang]` dynamic segment with middleware for locale detection
+- **Theme System** — `next-themes` with dark/light mode support
 
 ## Roadmap
 
-- [ ] MVP: Artist search with basic profile information
-- [ ] Discography with release timeline
-- [ ] Interactive influence network graph
-- [ ] Collaboration explorer with connection paths
+- [x] MVP: Artist search with basic profile information
+- [x] Internationalization (EN/ES)
+- [x] Dark/Light theme support
+- [x] API route proxy for SPARQL queries
+- [x] Tabbed artist view (Overview, Discography, Influences, Collaborations)
+- [x] Advanced search filters
+- [ ] Interactive influence network graph (D3.js / force-directed)
+- [ ] Discography timeline visualization (Recharts)
 - [ ] Query caching and performance optimization
-- [ ] Production deployment
+- [ ] Production deployment on Vercel
 
 ## License
 
