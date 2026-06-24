@@ -50,7 +50,12 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   return (
     <html lang={lang} suppressHydrationWarning>
       <body className={`${inter.variable} ${spaceMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          storageKey="musigraph-theme"
+        >
           {children}
         </ThemeProvider>
       </body>
