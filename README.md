@@ -1,8 +1,12 @@
-<div align="center">
+<p align="center">
+  🌐 <strong>English</strong> | <a href="README.es.md">Español</a>
+</p>
+
+<p align="center">
   <img src="public/musigraph-logo-vector.svg" alt="MusiGraph Logo" width="120" height="110" />
   <h1>MusiGraph</h1>
   <p>Semantic Music Explorer — Discover connections in music through linked data</p>
-</div>
+</p>
 
 <p align="center">
   <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=nextdotjs" alt="Next.js" /></a>
