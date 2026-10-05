@@ -78,23 +78,34 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
     <div className='min-h-screen bg-background text-foreground transition-colors duration-300'>
       <Header endpoint={endpoint} onEndpointChange={handleEndpointChange} dict={dict} locale={locale} />
 
-      <main className='flex flex-col items-center justify-center px-6 py-12 max-w-6xl mx-auto'>
-        <div className='text-center mb-12'>
-          <h2 className='text-4xl md:text-5xl font-extrabold text-foreground mb-4'>
-            {dict.home.title}
-          </h2>
-          <p className='text-lg text-muted max-w-2xl mx-auto'>
-            {dict.home.subtitle}
-          </p>
-        </div>
-        
-        <div className='w-full mb-12'>
-          <SearchBar onSearch={handleSearch} isLoading={isLoading} dict={dict} />
-        </div>
-        
-        {!searchTerm && <AppStats dict={dict} />}
-        
-        <div className='w-full'>
+      <main className='mx-auto max-w-6xl px-6 py-10'>
+        {!searchTerm ? (
+          <section className='grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center'>
+            <div>
+              <p className='mb-4 font-mono text-xs uppercase tracking-[0.18em] text-coral-deep dark:text-coral-vibrant'>
+                {dict.home.eyebrow}
+              </p>
+              <h1 className='text-4xl font-bold leading-tight tracking-tight text-foreground md:text-5xl'>
+                {dict.home.title}
+              </h1>
+              <p className='mt-4 max-w-[58ch] text-lg text-muted-foreground'>
+                {dict.home.subtitle}
+              </p>
+              <div className='mt-8'>
+                <SearchBar onSearch={handleSearch} isLoading={isLoading} dict={dict} />
+              </div>
+            </div>
+            <div className='hidden lg:block'>
+              <AppStats dict={dict} />
+            </div>
+          </section>
+        ) : (
+          <div className='mb-8'>
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} dict={dict} />
+          </div>
+        )}
+
+        <div className='mt-10'>
           <SearchResults
             results={searchResults}
             isLoading={isLoading}
@@ -105,13 +116,13 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
         </div>
       </main>
 
-      <footer className='text-center py-8 text-muted'>
+      <footer className='py-8 text-center text-muted-foreground'>
         <p className='mb-2'>
           {dict.home.providedBy}{" "}
           {endpoint.includes("dbpedia") ? (
-            <a href='https://dbpedia.org' target='_blank' rel='noopener noreferrer' className='text-coral-vibrant hover:text-coral-vibrant/80 transition-colors'>DBpedia</a>
+            <a href='https://dbpedia.org' target='_blank' rel='noopener noreferrer' className='text-coral-deep transition-colors hover:text-coral-deep/80 dark:text-coral-vibrant dark:hover:text-coral-vibrant/80'>DBpedia</a>
           ) : (
-            <a href='https://wikidata.org' target='_blank' rel='noopener noreferrer' className='text-coral-vibrant hover:text-coral-vibrant/80 transition-colors'>Wikidata</a>
+            <a href='https://wikidata.org' target='_blank' rel='noopener noreferrer' className='text-coral-deep transition-colors hover:text-coral-deep/80 dark:text-coral-vibrant dark:hover:text-coral-vibrant/80'>Wikidata</a>
           )}
         </p>
         <p className='text-sm'>{dict.home.footerText}</p>

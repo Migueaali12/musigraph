@@ -9,6 +9,22 @@ interface OverviewTabProps {
   dict: Dictionary
 }
 
+interface StatTileProps {
+  value: number
+  label: string
+}
+
+function StatTile({ value, label }: StatTileProps) {
+  return (
+    <div className='rounded-2xl border border-border bg-surface-elevated p-6 text-center'>
+      <div className='font-mono text-3xl font-bold text-coral-deep dark:text-coral-vibrant'>
+        {value}
+      </div>
+      <div className='mt-1 text-sm text-muted-foreground'>{label}</div>
+    </div>
+  )
+}
+
 export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
   const countryPart = artist.country
     ? dict.artist.overviewDescriptionCountry.replace("{country}", artist.country)
@@ -30,11 +46,11 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
   return (
     <div className='space-y-8'>
       <div>
-        <h3 className='text-2xl font-bold text-foreground mb-4 flex items-center gap-2'>
-          <BarChart3 className='w-6 h-6 text-coral-vibrant' />
+        <h3 className='mb-4 flex items-center gap-2 text-2xl font-bold text-foreground'>
+          <BarChart3 className='h-6 w-6 text-coral-deep dark:text-coral-vibrant' />
           {dict.artist.overviewTitle}
         </h3>
-        <p className='text-muted text-lg leading-relaxed'>
+        <p className='text-lg leading-relaxed text-muted-foreground'>
           {dict.artist.overviewDescription
             .replace("{name}", artist.name)
             .replace("{country}", countryPart)
@@ -43,25 +59,19 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
         </p>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-        <div className='bg-gradient-energy rounded-2xl p-6 text-center'>
-          <div className='text-3xl font-bold text-white mb-2'>
-            {processedData.statistics.totalAlbums}
-          </div>
-          <div className='text-white/80'>{dict.artist.statAlbums}</div>
-        </div>
-        <div className='bg-gradient-ocean rounded-2xl p-6 text-center'>
-          <div className='text-3xl font-bold text-white mb-2'>
-            {processedData.statistics.totalInfluences}
-          </div>
-          <div className='text-white/80'>{dict.artist.statInfluences}</div>
-        </div>
-        <div className='bg-gradient-sunrise rounded-2xl p-6 text-center'>
-          <div className='text-3xl font-bold text-white mb-2'>
-            {processedData.statistics.totalCollaborations}
-          </div>
-          <div className='text-white/80'>{dict.artist.statCollaborations}</div>
-        </div>
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+        <StatTile
+          value={processedData.statistics.totalAlbums}
+          label={dict.artist.statAlbums}
+        />
+        <StatTile
+          value={processedData.statistics.totalInfluences}
+          label={dict.artist.statInfluences}
+        />
+        <StatTile
+          value={processedData.statistics.totalCollaborations}
+          label={dict.artist.statCollaborations}
+        />
       </div>
     </div>
   )

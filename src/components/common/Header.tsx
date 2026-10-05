@@ -90,7 +90,7 @@ export function Header({
           />
         </div>
         <h2 className='text-2xl font-bold text-foreground'>
-          Musi<span className='text-coral-vibrant'>Graph</span>
+          Musi<span className='text-coral-deep dark:text-coral-vibrant'>Graph</span>
         </h2>
       </div>
 

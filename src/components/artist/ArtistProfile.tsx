@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { fetchDiscographyFromMusicBrainz } from "@/services/musicbrainzService"
 import type { Dictionary } from "@/dictionaries/getDictionary"
+import { Badge } from "@/components/common/Badge"
 import { OverviewTab } from "./tabs/OverviewTab"
 import { DiscographyTab } from "./tabs/DiscographyTab"
 import { InfluencesTab } from "./tabs/InfluencesTab"
@@ -170,7 +171,7 @@ export function ArtistProfile({
       </div>
 
       {/* Artist hero card */}
-      <div className='bg-surface border border-border rounded-3xl p-8 mb-8 shadow-sm'>
+      <div className='bg-surface border border-border rounded-2xl p-8 mb-8 shadow-sm'>
         <div className='flex flex-col lg:flex-row items-start gap-8'>
           <div className='shrink-0'>
             <div className='relative w-48 h-48'>
@@ -185,8 +186,8 @@ export function ArtistProfile({
                   priority
                 />
               ) : (
-                <div className='w-full h-full bg-gradient-energy rounded-2xl flex items-center justify-center'>
-                  <Music className='w-16 h-16 text-white' />
+                <div className='w-full h-full bg-surface-elevated rounded-2xl flex items-center justify-center'>
+                  <Music className='w-16 h-16 text-muted-foreground' />
                 </div>
               )}
             </div>
@@ -226,12 +227,9 @@ export function ArtistProfile({
                     </span>
                     <div className='flex flex-wrap gap-1'>
                       {artist.instruments.map((instrument, index) => (
-                        <span
-                          key={index}
-                          className='px-2 py-1 bg-blue-harmonic/15 text-blue-harmonic text-xs rounded-full font-medium'
-                        >
+                        <Badge key={index} variant='muted'>
                           {instrument}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -277,12 +275,7 @@ export function ArtistProfile({
                 </h3>
                 <div className='flex flex-wrap gap-2'>
                   {artist.genres.map((genre, index) => (
-                    <span
-                      key={index}
-                      className='px-3 py-1 bg-coral-vibrant/15 text-coral-vibrant rounded-full font-medium'
-                    >
-                      {genre}
-                    </span>
+                    <Badge key={index}>{genre}</Badge>
                   ))}
                 </div>
               </div>
@@ -310,7 +303,7 @@ export function ArtistProfile({
                 onClick={() => setActiveTab(id)}
                 className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-1 ${
                   activeTab === id
-                    ? "bg-coral-vibrant text-white shadow-lg"
+                    ? "bg-coral-deep text-white"
                     : "text-muted hover:text-foreground hover:bg-surface-elevated"
                 }`}
               >
@@ -323,7 +316,7 @@ export function ArtistProfile({
       </div>
 
       {/* Tab content */}
-      <div className='bg-surface border border-border rounded-3xl p-8 shadow-sm'>
+      <div className='bg-surface border border-border rounded-2xl p-8 shadow-sm'>
         {isLoading ? (
           <TabSkeleton />
         ) : (

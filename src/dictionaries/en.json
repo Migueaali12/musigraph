@@ -2,6 +2,7 @@
   "home": {
     "title": "Explore the Musical Universe",
     "subtitle": "Discover relationships between artists, musical genres, influences, and collaborations through connected semantic data.",
+    "eyebrow": "Semantic Music Explorer",
     "endpoint": "Endpoint:",
     "tests": "Tests",
     "providedBy": "Data provided by",
@@ -44,7 +45,7 @@
     "foundArtists": "{count} artist{plural}",
     "foundArtistsOne": "1 artist",
     "foundArtistsMany": "{count} artists",
-    "clickToExplore": "Click to explore →"
+    "clickToExplore": "Click to explore"
   },
   "artist": {
     "dataSource": "Data source:",
@@ -95,7 +96,7 @@
     "exploreArtists": "Explore Artists",
     "exploreDescription": "Search for detailed information about any musical artist or band",
     "discography": "Discography",
-    "discographyDescription": "Discover musical influences and connections between artists",
+    "discographyDescription": "Explore an artist's albums, releases and record labels",
     "semanticData": "Semantic Data",
     "semanticDescription": "Structured information from Wikidata in real time"
   },
