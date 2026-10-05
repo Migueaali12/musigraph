@@ -18,7 +18,7 @@ export function Loading({
       <div
         className={`${sizeClasses[size]} animate-spin rounded-full border-4 border-coral-vibrant border-t-transparent`}
       />
-      <p className='mt-4 text-white text-center'>{message}</p>
+      <p className='mt-4 text-center text-foreground'>{message}</p>
     </div>
   )
 }

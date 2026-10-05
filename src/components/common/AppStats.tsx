@@ -1,22 +1,25 @@
-"use client"
-
-import { Music, Disc, BarChart3 } from "lucide-react"
+import { Music, Disc, BarChart3, type LucideIcon } from "lucide-react"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
-interface StatsCardProps {
-  icon: React.ReactNode
+interface FeatureItemProps {
+  icon: LucideIcon
   title: string
   description: string
-  color: string
 }
 
-function StatsCard({ icon, title, description, color }: StatsCardProps) {
+function FeatureItem({ icon: Icon, title, description }: FeatureItemProps) {
   return (
-    <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white shadow-md`}>
-      <div className='mb-3'>{icon}</div>
-      <h3 className='text-lg font-semibold mb-2'>{title}</h3>
-      <p className='text-white/80 text-sm'>{description}</p>
-    </div>
+    <li className='flex items-start gap-4 p-5'>
+      <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-elevated'>
+        <Icon className='h-5 w-5 text-coral-deep dark:text-coral-vibrant' />
+      </div>
+      <div>
+        <h3 className='text-sm font-semibold text-foreground'>{title}</h3>
+        <p className='mt-1 text-sm leading-relaxed text-muted-foreground'>
+          {description}
+        </p>
+      </div>
+    </li>
   )
 }
 
@@ -26,25 +29,22 @@ interface AppStatsProps {
 
 export function AppStats({ dict }: AppStatsProps) {
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12'>
-      <StatsCard
-        icon={<Music className="w-8 h-8" />}
+    <ul className='divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface'>
+      <FeatureItem
+        icon={Music}
         title={dict.stats.exploreArtists}
         description={dict.stats.exploreDescription}
-        color='from-coral-vibrant to-pink-symphonic'
       />
-      <StatsCard
-        icon={<Disc className="w-8 h-8" />}
+      <FeatureItem
+        icon={Disc}
         title={dict.stats.discography}
         description={dict.stats.discographyDescription}
-        color='from-turquoise-musical to-blue-harmonic'
       />
-      <StatsCard
-        icon={<BarChart3 className="w-8 h-8" />}
+      <FeatureItem
+        icon={BarChart3}
         title={dict.stats.semanticData}
         description={dict.stats.semanticDescription}
-        color='from-gold-rhythmic to-coral-vibrant'
       />
-    </div>
+    </ul>
   )
 }

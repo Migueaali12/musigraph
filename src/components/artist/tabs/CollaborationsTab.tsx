@@ -1,4 +1,5 @@
 import { Handshake, Users, Calendar } from "lucide-react"
+import { EmptyState } from "@/components/common/EmptyState"
 import type { CollaborationInfo } from "@/services/sparqlService"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
@@ -10,39 +11,35 @@ interface CollaborationsTabProps {
 export function CollaborationsTab({ collaborations, dict }: CollaborationsTabProps) {
   if (collaborations.length === 0) {
     return (
-      <div className='text-center py-12'>
-        <div className='w-16 h-16 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
-          <Users className='w-8 h-8 text-muted' />
-        </div>
-        <h4 className='text-lg font-semibold text-foreground mb-2 font-sans'>
-          {dict.artist.noCollaborations}
-        </h4>
-        <p className='text-muted'>{dict.artist.noCollaborationsDesc}</p>
-      </div>
+      <EmptyState
+        icon={Users}
+        title={dict.artist.noCollaborations}
+        description={dict.artist.noCollaborationsDesc}
+      />
     )
   }
 
   return (
     <div>
-      <h3 className='text-2xl font-bold text-foreground mb-6 flex items-center gap-2'>
-        <Handshake className='w-6 h-6 text-coral-vibrant' />
+      <h3 className='mb-6 flex items-center gap-2 text-2xl font-bold text-foreground'>
+        <Handshake className='h-6 w-6 text-coral-deep dark:text-coral-vibrant' />
         {dict.artist.collaborationsTab}
       </h3>
-      <div className='space-y-4'>
+      <div className='space-y-3'>
         {collaborations.map((collab, index) => (
           <div
             key={index}
-            className='p-4 bg-surface-elevated border border-border rounded-xl hover:border-border/60 transition-colors'
+            className='rounded-xl border border-border bg-surface-elevated p-4 transition-colors hover:border-coral-deep/30 dark:hover:border-coral-vibrant/40'
           >
-            <h4 className='font-semibold text-foreground mb-2'>{collab.song}</h4>
-            <div className='flex items-center gap-4 text-sm text-muted'>
+            <h4 className='mb-2 font-semibold text-foreground'>{collab.song}</h4>
+            <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground'>
               <span className='inline-flex items-center gap-1'>
-                <Users className='w-4 h-4' />
+                <Users className='h-4 w-4' />
                 {dict.artist.with.replace("{artist}", collab.artist2)}
               </span>
               {collab.releaseDate && (
                 <span className='inline-flex items-center gap-1'>
-                  <Calendar className='w-4 h-4' />
+                  <Calendar className='h-4 w-4' />
                   {new Date(collab.releaseDate).getFullYear()}
                 </span>
               )}

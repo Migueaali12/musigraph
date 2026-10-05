@@ -5,19 +5,19 @@ export default function NotFound() {
   return (
     <div className='min-h-screen bg-background flex items-center justify-center p-6'>
       <div className='text-center max-w-md'>
-        <div className='w-20 h-20 mx-auto mb-6 bg-gradient-energy rounded-full flex items-center justify-center'>
-          <Music className='w-10 h-10 text-white' />
+        <div className='mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-surface-elevated'>
+          <Music className='h-10 w-10 text-coral-deep dark:text-coral-vibrant' />
         </div>
-        <h2 className='text-6xl font-bold text-coral-vibrant mb-3'>404</h2>
-        <h3 className='text-2xl font-bold text-foreground mb-3'>
+        <h2 className='mb-3 text-6xl font-bold text-coral-deep dark:text-coral-vibrant'>404</h2>
+        <h3 className='mb-3 text-2xl font-bold text-foreground'>
           Page Not Found
         </h3>
-        <p className='text-muted mb-6'>
+        <p className='mb-6 text-muted-foreground'>
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
         <Link
           href='/en'
-          className='px-6 py-2.5 bg-coral-vibrant text-white rounded-lg hover:bg-coral-vibrant/90 transition-colors inline-flex items-center gap-2 font-medium'
+          className='inline-flex items-center gap-2 rounded-lg bg-coral-deep px-6 py-2.5 font-medium text-white transition-colors hover:bg-coral-deep/90'
         >
           <ArrowLeft className='w-4 h-4' />
           Go home

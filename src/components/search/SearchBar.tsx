@@ -50,7 +50,7 @@ export function SearchBar({ onSearch, isLoading, dict }: SearchBarProps) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={dict.search.placeholder}
-            className='w-full pl-12 pr-36 py-4 bg-surface border border-border rounded-2xl text-foreground placeholder-muted text-lg focus:outline-none focus:ring-2 focus:ring-coral-vibrant focus:border-transparent transition-all shadow-sm'
+            className='w-full pl-12 pr-36 py-4 bg-surface border border-border rounded-lg text-foreground placeholder-muted text-lg focus:outline-none focus:ring-2 focus:ring-coral-vibrant focus:border-transparent transition-all shadow-sm'
             disabled={isLoading}
           />
           <div className='absolute inset-y-0 right-0 flex items-center'>
@@ -68,7 +68,7 @@ export function SearchBar({ onSearch, isLoading, dict }: SearchBarProps) {
             <button
               type='submit'
               disabled={isLoading || !hasInput}
-              className='mr-2 px-6 py-2 bg-gradient-energy text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 text-sm'
+              className='mr-2 px-6 py-2 bg-coral-deep text-white rounded-lg font-medium transition-colors hover:bg-coral-deep/90 disabled:opacity-50 text-sm'
             >
               {isLoading ? dict.search.searching : dict.search.search}
             </button>
@@ -94,7 +94,7 @@ export function SearchBar({ onSearch, isLoading, dict }: SearchBarProps) {
               key={term}
               onClick={() => handleQuickSearch(term)}
               disabled={isLoading}
-              className='px-4 py-2 bg-surface border border-border text-foreground rounded-full text-sm hover:border-coral-vibrant/50 hover:text-coral-vibrant transition-colors disabled:opacity-50'
+              className='px-4 py-2 bg-surface border border-border text-foreground rounded-full text-sm transition-colors hover:border-coral-deep/40 hover:text-coral-deep disabled:opacity-50 dark:hover:border-coral-vibrant/50 dark:hover:text-coral-vibrant'
             >
               {term}
             </button>

@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { type ArtistInfo } from "@/services/sparqlService"
-import { WelcomeMessage } from "@/components/common/WelcomeMessage"
+import { EmptyState } from "@/components/common/EmptyState"
+import { Badge } from "@/components/common/Badge"
 import Image from "next/image"
-import { Lightbulb, MapPin, Calendar, Music } from "lucide-react"
+import { Lightbulb, MapPin, Calendar, Music, Search, ArrowRight } from "lucide-react"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface SearchResultsProps {
@@ -15,6 +16,24 @@ interface SearchResultsProps {
   dict: Dictionary
 }
 
+function ResultSkeleton() {
+  return (
+    <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className='animate-pulse rounded-2xl border border-border bg-surface p-6'
+        >
+          <div className='mx-auto mb-4 h-24 w-24 rounded-full bg-surface-elevated' />
+          <div className='mx-auto h-5 w-2/3 rounded bg-surface-elevated' />
+          <div className='mx-auto mt-2 h-4 w-1/2 rounded bg-surface-elevated' />
+          <div className='mx-auto mt-4 h-6 w-3/4 rounded bg-surface-elevated' />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function SearchResults({
   results,
   isLoading,
@@ -23,82 +42,37 @@ export function SearchResults({
   dict,
 }: SearchResultsProps) {
   if (isLoading) {
-    return (
-      <div className='text-center py-12'>
-        <div className='inline-flex items-center gap-3'>
-          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-coral-vibrant'></div>
-          <span className='text-foreground text-lg'>
-            {dict.results.searchingUniverse}
-          </span>
-        </div>
-      </div>
-    )
+    return <ResultSkeleton />
   }
 
   if (!searchTerm) {
     return (
-      <div className='text-center py-12'>
-        <WelcomeMessage dict={dict} />
-        <div className='mb-8'>
-          <div className='w-24 h-24 mx-auto mb-4 bg-gradient-energy rounded-full flex items-center justify-center'>
-            <svg
-              className='w-12 h-12 text-white'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'
-              />
-            </svg>
-          </div>
-          <h3 className='text-2xl font-bold text-foreground mb-2'>
-            {dict.results.discoverUniverse}
-          </h3>
-          <p className='text-muted max-w-md mx-auto'>
-            {dict.results.discoverDescription}
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={Search}
+        title={dict.results.discoverUniverse}
+        description={dict.results.discoverDescription}
+      />
     )
   }
 
   if (results.length === 0) {
     return (
-      <div className='text-center py-12'>
-        <div className='mb-8'>
-          <div className='w-24 h-24 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
-            <svg
-              className='w-12 h-12 text-muted'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-              />
-            </svg>
-          </div>
-        <h3 className='text-xl font-bold text-foreground mb-2 font-sans'>
-          {dict.results.noResults.replace("{searchTerm}", searchTerm)}
-        </h3>
-          <p className='text-muted max-w-md mx-auto mb-6'>
-            {dict.results.noResultsDescription}
+      <div>
+        <EmptyState
+          icon={Search}
+          title={dict.results.noResults.replace("{searchTerm}", searchTerm)}
+          description={dict.results.noResultsDescription}
+        />
+        <div className='mx-auto max-w-md text-center'>
+          <p className='mb-2 flex items-center justify-center gap-1.5 text-sm font-medium text-foreground'>
+            <Lightbulb className='h-4 w-4 text-coral-deep dark:text-coral-vibrant' />
+            {dict.results.suggestions}
           </p>
-          <div className='space-y-2 text-sm text-muted'>
-            <p className="flex items-center justify-center gap-1">
-              <Lightbulb className="w-4 h-4" /> <strong>{dict.results.suggestions}</strong>
-            </p>
-            <p>• {dict.results.suggestion1}</p>
-            <p>• {dict.results.suggestion2}</p>
-            <p>• {dict.results.suggestion3}</p>
-          </div>
+          <ul className='space-y-1 text-sm text-muted-foreground'>
+            <li>{dict.results.suggestion1}</li>
+            <li>{dict.results.suggestion2}</li>
+            <li>{dict.results.suggestion3}</li>
+          </ul>
         </div>
       </div>
     )
@@ -111,15 +85,13 @@ export function SearchResults({
   return (
     <div>
       <div className='mb-6'>
-        <h2 className='text-2xl font-bold text-foreground mb-2'>
+        <h2 className='mb-2 text-2xl font-bold text-foreground'>
           {dict.results.resultsFor.replace("{searchTerm}", searchTerm)}
         </h2>
-        <p className='text-muted'>
-          {artistCountText}
-        </p>
+        <p className='text-muted-foreground'>{artistCountText}</p>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
         {results.map((artist) => (
           <ArtistCard
             key={artist.id}
@@ -142,91 +114,68 @@ interface ArtistCardProps {
 function ArtistCard({ artist, onClick, dict }: ArtistCardProps) {
   const [imageError, setImageError] = useState(false)
 
-  const handleImageError = () => {
-    setImageError(true)
-  }
-
   return (
-    <div
+    <button
+      type='button'
       onClick={onClick}
-      className='bg-surface border border-border rounded-2xl p-6 hover:border-coral-vibrant/50 hover:shadow-md transition-all duration-300 cursor-pointer group'
+      className='group flex flex-col items-center rounded-2xl border border-border bg-surface p-6 text-center transition-colors hover:border-coral-deep/40 dark:hover:border-coral-vibrant/50'
     >
-      <div className='relative w-24 h-24 mx-auto mb-4'>
+      <div className='relative mb-4 h-24 w-24'>
         {artist.image && !imageError ? (
           <Image
             src={artist.image}
             alt={artist.name}
             fill
             className='rounded-full object-cover'
-            onError={handleImageError}
+            onError={() => setImageError(true)}
             sizes='96px'
             priority={false}
           />
         ) : (
-          <div className='w-full h-full bg-gradient-ocean rounded-full flex items-center justify-center'>
-            <svg
-              className='w-8 h-8 text-white'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
-              />
-            </svg>
+          <div className='flex h-full w-full items-center justify-center rounded-full bg-surface-elevated'>
+            <Music className='h-9 w-9 text-muted-foreground' />
           </div>
         )}
       </div>
 
-      <div className='text-center'>
-        <h3 className='text-lg font-semibold text-foreground mb-2 group-hover:text-coral-vibrant transition-colors'>
-          {artist.name}
-        </h3>
+      <h3 className='mb-2 text-lg font-semibold text-foreground transition-colors group-hover:text-coral-deep dark:group-hover:text-coral-vibrant'>
+        {artist.name}
+      </h3>
 
-        {artist.country && (
-          <p className='text-sm text-muted mb-2 flex items-center justify-center gap-1'><MapPin className="w-4 h-4" /> {artist.country}</p>
-        )}
+      {artist.country && (
+        <p className='mb-2 flex items-center justify-center gap-1 text-sm text-muted-foreground'>
+          <MapPin className='h-4 w-4' /> {artist.country}
+        </p>
+      )}
 
-        {artist.birthDate && (
-          <p className='text-sm text-muted mb-3 flex items-center justify-center gap-1'>
-            <Calendar className="w-4 h-4" /> {new Date(artist.birthDate).getFullYear()}
-          </p>
-        )}
+      {artist.birthDate && (
+        <p className='mb-3 flex items-center justify-center gap-1 text-sm text-muted-foreground'>
+          <Calendar className='h-4 w-4' /> {new Date(artist.birthDate).getFullYear()}
+        </p>
+      )}
 
-        {artist.genres.length > 0 && (
-          <div className='mb-3'>
-            <div className='flex flex-wrap justify-center gap-1'>
-              {artist.genres.slice(0, 3).map((genre, index) => (
-                <span
-                  key={index}
-                  className='px-2 py-1 bg-coral-vibrant/15 text-coral-vibrant text-xs rounded-full font-medium'
-                >
-                  {genre}
-                </span>
-              ))}
-              {artist.genres.length > 3 && (
-                <span className='px-2 py-1 bg-surface-elevated text-muted text-xs rounded-full'>
-                  +{artist.genres.length - 3}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+      {artist.genres.length > 0 && (
+        <div className='mb-3 flex flex-wrap justify-center gap-1.5'>
+          {artist.genres.slice(0, 3).map((genre, index) => (
+            <Badge key={index}>{genre}</Badge>
+          ))}
+          {artist.genres.length > 3 && (
+            <Badge variant='muted'>+{artist.genres.length - 3}</Badge>
+          )}
+        </div>
+      )}
 
-        {artist.instruments.length > 0 && (
-          <div className='text-xs text-muted flex items-center justify-center gap-1'>
-            <Music className="w-4 h-4" /> {artist.instruments.slice(0, 2).join(", ")}
-            {artist.instruments.length > 2 && "..."}
-          </div>
-        )}
-      </div>
+      {artist.instruments.length > 0 && (
+        <div className='flex items-center justify-center gap-1 text-xs text-muted-foreground'>
+          <Music className='h-4 w-4' /> {artist.instruments.slice(0, 2).join(", ")}
+          {artist.instruments.length > 2 && "..."}
+        </div>
+      )}
 
-      <div className='text-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity'>
-        <span className='text-xs text-coral-vibrant'>{dict.results.clickToExplore}</span>
-      </div>
-    </div>
+      <span className='mt-4 inline-flex items-center gap-1 text-xs text-coral-deep opacity-0 transition-opacity group-hover:opacity-100 dark:text-coral-vibrant'>
+        {dict.results.clickToExplore}
+        <ArrowRight className='h-3.5 w-3.5' />
+      </span>
+    </button>
   )
 }
