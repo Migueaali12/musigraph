@@ -46,3 +46,4 @@ next-env.d.ts
 # skills and agents
 .agents/
 .kiro/
+.claude/
