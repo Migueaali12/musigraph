@@ -1,6 +1,7 @@
-import { Lightbulb, MapPin } from "lucide-react"
+import { Lightbulb } from "lucide-react"
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { Dictionary } from "@/dictionaries/getDictionary"
+import { TabEmpty } from "./TabEmpty"
 
 interface InfluencesTabProps {
   influences: ArtistInfo[]
@@ -10,52 +11,39 @@ interface InfluencesTabProps {
 export function InfluencesTab({ influences, dict }: InfluencesTabProps) {
   if (influences.length === 0) {
     return (
-      <div className='text-center py-12'>
-        <div className='w-16 h-16 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
-          <Lightbulb className='w-8 h-8 text-muted' />
-        </div>
-        <h4 className='text-lg font-semibold text-foreground mb-2 font-sans'>
-          {dict.artist.noInfluences}
-        </h4>
-        <p className='text-muted'>{dict.artist.noInfluencesDesc}</p>
-      </div>
+      <TabEmpty
+        icon={Lightbulb}
+        title={dict.artist.noInfluences}
+        description={dict.artist.noInfluencesDesc}
+      />
     )
   }
 
   return (
-    <div>
-      <h3 className='text-2xl font-bold text-foreground mb-6 flex items-center gap-2'>
-        <Lightbulb className='w-6 h-6 text-coral-vibrant' />
-        {dict.artist.influencesTab}
-      </h3>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-        {influences.map((influence, index) => (
-          <div
-            key={influence.id || index}
-            className='p-4 bg-surface-elevated border border-border rounded-xl hover:border-border/60 transition-colors'
-          >
-            <h4 className='font-semibold text-foreground mb-2'>{influence.name}</h4>
-            {influence.country && (
-              <p className='text-sm text-muted mb-2 inline-flex items-center gap-1'>
-                <MapPin className='w-4 h-4' />
-                {influence.country}
-              </p>
-            )}
-            {influence.genres.length > 0 && (
-              <div className='flex flex-wrap gap-1'>
-                {influence.genres.slice(0, 3).map((genre, genreIndex) => (
-                  <span
-                    key={genreIndex}
-                    className='px-2 py-1 bg-turquoise-musical/15 text-turquoise-musical text-xs rounded-full font-medium'
-                  >
-                    {genre}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+    <ul className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+      {influences.map((influence, index) => (
+        <li
+          key={influence.id || index}
+          className='rounded-md border border-border p-4 transition-colors hover:border-accent/40'
+        >
+          <h4 className='text-sm font-bold'>{influence.name}</h4>
+          {influence.country && (
+            <p className='mt-1 text-[13px] text-muted'>{influence.country}</p>
+          )}
+          {influence.genres.length > 0 && (
+            <div className='mt-2.5 flex flex-wrap gap-1.5'>
+              {influence.genres.slice(0, 3).map((genre, genreIndex) => (
+                <span
+                  key={genreIndex}
+                  className='chip border-turquoise/20 bg-turquoise-soft text-turquoise'
+                >
+                  {genre}
+                </span>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   )
 }

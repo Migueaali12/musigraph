@@ -1,50 +1,48 @@
-"use client"
-
 import { Music, Disc, BarChart3 } from "lucide-react"
 import type { Dictionary } from "@/dictionaries/getDictionary"
-
-interface StatsCardProps {
-  icon: React.ReactNode
-  title: string
-  description: string
-  color: string
-}
-
-function StatsCard({ icon, title, description, color }: StatsCardProps) {
-  return (
-    <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white shadow-md`}>
-      <div className='mb-3'>{icon}</div>
-      <h3 className='text-lg font-semibold mb-2'>{title}</h3>
-      <p className='text-white/80 text-sm'>{description}</p>
-    </div>
-  )
-}
 
 interface AppStatsProps {
   dict: Dictionary
 }
 
 export function AppStats({ dict }: AppStatsProps) {
+  const items = [
+    {
+      icon: Music,
+      title: dict.stats.exploreArtists,
+      description: dict.stats.exploreDescription,
+    },
+    {
+      icon: Disc,
+      title: dict.stats.discography,
+      description: dict.stats.discographyDescription,
+    },
+    {
+      icon: BarChart3,
+      title: dict.stats.semanticData,
+      description: dict.stats.semanticDescription,
+    },
+  ]
+
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12'>
-      <StatsCard
-        icon={<Music className="w-8 h-8" />}
-        title={dict.stats.exploreArtists}
-        description={dict.stats.exploreDescription}
-        color='from-coral-vibrant to-pink-symphonic'
-      />
-      <StatsCard
-        icon={<Disc className="w-8 h-8" />}
-        title={dict.stats.discography}
-        description={dict.stats.discographyDescription}
-        color='from-turquoise-musical to-blue-harmonic'
-      />
-      <StatsCard
-        icon={<BarChart3 className="w-8 h-8" />}
-        title={dict.stats.semanticData}
-        description={dict.stats.semanticDescription}
-        color='from-gold-rhythmic to-coral-vibrant'
-      />
-    </div>
+    <aside style={{ animationDelay: "80ms" }} className='animate-rise'>
+      <ul className='divide-y divide-border rounded-md border border-border bg-surface'>
+        {items.map(({ icon: Icon, title, description }) => (
+          <li key={title} className='flex items-start gap-3 px-5 py-4'>
+            <Icon
+              className='mt-0.5 h-4 w-4 shrink-0 text-accent'
+              strokeWidth={1.5}
+              aria-hidden='true'
+            />
+            <div>
+              <h3 className='text-[13px] font-bold'>{title}</h3>
+              <p className='mt-1 text-[13px] leading-relaxed text-muted'>
+                {description}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </aside>
   )
 }

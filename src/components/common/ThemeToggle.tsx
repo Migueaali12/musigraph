@@ -18,10 +18,10 @@ export function ThemeToggle() {
     return (
       <button
         aria-label="Toggle theme"
-        className="p-2 rounded-lg transition-colors"
+        className="control control-icon"
         disabled
       >
-        <Sun className="h-5 w-5" />
+        <Sun className="h-4 w-4" strokeWidth={1.5} />
       </button>
     )
   }
@@ -32,17 +32,19 @@ export function ThemeToggle() {
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="relative p-2 rounded-lg bg-surface border border-border text-foreground hover:bg-surface-elevated transition-colors duration-200"
+      className="control control-icon"
     >
-      <span className="relative block h-5 w-5">
+      <span className="relative block h-4 w-4">
         <Sun
-          className={`absolute inset-0 h-5 w-5 transition-all duration-300 ${
-            isDark ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
+          strokeWidth={1.5}
+          className={`absolute inset-0 h-4 w-4 transition-opacity duration-150 ${
+            isDark ? "opacity-0" : "opacity-100"
           }`}
         />
         <Moon
-          className={`absolute inset-0 h-5 w-5 transition-all duration-300 ${
-            isDark ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"
+          strokeWidth={1.5}
+          className={`absolute inset-0 h-4 w-4 transition-opacity duration-150 ${
+            isDark ? "opacity-100" : "opacity-0"
           }`}
         />
       </span>

@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { type ArtistInfo } from "@/services/sparqlService"
-import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import Image from "next/image"
-import { Lightbulb, MapPin, Calendar, Music } from "lucide-react"
+import { ArrowRight } from "lucide-react"
+import { getInitials } from "@/utils/format"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface SearchResultsProps {
@@ -24,81 +24,57 @@ export function SearchResults({
 }: SearchResultsProps) {
   if (isLoading) {
     return (
-      <div className='text-center py-12'>
-        <div className='inline-flex items-center gap-3'>
-          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-coral-vibrant'></div>
-          <span className='text-foreground text-lg'>
-            {dict.results.searchingUniverse}
-          </span>
-        </div>
+      <div className='animate-rise'>
+        <p className='mb-4 flex items-center gap-2 text-[13px] text-muted'>
+          {dict.results.searchingUniverse}
+          <span aria-hidden='true' className='blink cursor-block text-accent' />
+        </p>
+        <ul className='divide-y divide-border border-y border-border'>
+          {[0, 1, 2].map((i) => (
+            <li key={i} className='flex items-center gap-4 py-4'>
+              <div className='h-10 w-10 shrink-0 animate-pulse rounded-sm bg-surface-elevated' />
+              <div className='flex-1 space-y-2'>
+                <div className='h-3.5 w-40 animate-pulse rounded-xs bg-surface-elevated' />
+                <div className='h-3 w-64 max-w-full animate-pulse rounded-xs bg-surface-elevated' />
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     )
   }
 
   if (!searchTerm) {
-    return (
-      <div className='text-center py-12'>
-        <WelcomeMessage dict={dict} />
-        <div className='mb-8'>
-          <div className='w-24 h-24 mx-auto mb-4 bg-gradient-energy rounded-full flex items-center justify-center'>
-            <svg
-              className='w-12 h-12 text-white'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3'
-              />
-            </svg>
-          </div>
-          <h3 className='text-2xl font-bold text-foreground mb-2'>
-            {dict.results.discoverUniverse}
-          </h3>
-          <p className='text-muted max-w-md mx-auto'>
-            {dict.results.discoverDescription}
-          </p>
-        </div>
-      </div>
-    )
+    return null
   }
 
   if (results.length === 0) {
     return (
-      <div className='text-center py-12'>
-        <div className='mb-8'>
-          <div className='w-24 h-24 mx-auto mb-4 bg-surface-elevated rounded-full flex items-center justify-center'>
-            <svg
-              className='w-12 h-12 text-muted'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-              />
-            </svg>
-          </div>
-        <h3 className='text-xl font-bold text-foreground mb-2 font-sans'>
+      <div className='animate-rise border-y border-border py-14 text-center'>
+        <h3 className='mb-2 text-lg font-bold'>
           {dict.results.noResults.replace("{searchTerm}", searchTerm)}
         </h3>
-          <p className='text-muted max-w-md mx-auto mb-6'>
-            {dict.results.noResultsDescription}
+        <p className='mx-auto mb-8 max-w-md text-[13px] leading-relaxed text-muted'>
+          {dict.results.noResultsDescription}
+        </p>
+        <div className='mx-auto max-w-sm rounded-sm border border-border bg-surface p-4 text-left'>
+          <p className='mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted'>
+            {dict.results.suggestions}
           </p>
-          <div className='space-y-2 text-sm text-muted'>
-            <p className="flex items-center justify-center gap-1">
-              <Lightbulb className="w-4 h-4" /> <strong>{dict.results.suggestions}</strong>
-            </p>
-            <p>• {dict.results.suggestion1}</p>
-            <p>• {dict.results.suggestion2}</p>
-            <p>• {dict.results.suggestion3}</p>
-          </div>
+          <ul className='space-y-1.5 text-[13px] text-muted'>
+            <li className='flex gap-2'>
+              <span aria-hidden='true' className='text-accent'>&gt;</span>
+              {dict.results.suggestion1}
+            </li>
+            <li className='flex gap-2'>
+              <span aria-hidden='true' className='text-accent'>&gt;</span>
+              {dict.results.suggestion2}
+            </li>
+            <li className='flex gap-2'>
+              <span aria-hidden='true' className='text-accent'>&gt;</span>
+              {dict.results.suggestion3}
+            </li>
+          </ul>
         </div>
       </div>
     )
@@ -109,124 +85,105 @@ export function SearchResults({
     : dict.results.foundArtistsMany.replace("{count}", String(results.length))
 
   return (
-    <div>
-      <div className='mb-6'>
-        <h2 className='text-2xl font-bold text-foreground mb-2'>
+    <div className='animate-rise'>
+      <div className='mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1'>
+        <h2 className='text-xl font-bold tracking-tight'>
           {dict.results.resultsFor.replace("{searchTerm}", searchTerm)}
         </h2>
-        <p className='text-muted'>
-          {artistCountText}
-        </p>
+        <p className='text-[13px] text-muted'>{artistCountText}</p>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <ul className='divide-y divide-border border-y border-border'>
         {results.map((artist) => (
-          <ArtistCard
+          <ArtistRow
             key={artist.id}
             artist={artist}
             onClick={() => onArtistSelect(artist)}
-            dict={dict}
           />
         ))}
-      </div>
+      </ul>
     </div>
   )
 }
 
-interface ArtistCardProps {
+interface ArtistRowProps {
   artist: ArtistInfo
   onClick: () => void
-  dict: Dictionary
 }
 
-function ArtistCard({ artist, onClick, dict }: ArtistCardProps) {
+function ArtistRow({ artist, onClick }: ArtistRowProps) {
   const [imageError, setImageError] = useState(false)
 
-  const handleImageError = () => {
-    setImageError(true)
+  const hasImage = Boolean(artist.image) && !imageError
+  const year = artist.birthDate
+    ? new Date(artist.birthDate).getFullYear()
+    : null
+
+  const metaParts: string[] = []
+  if (artist.country) metaParts.push(artist.country)
+  if (year) metaParts.push(String(year))
+  if (artist.instruments.length > 0) {
+    metaParts.push(artist.instruments.slice(0, 2).join(", "))
   }
 
   return (
-    <div
-      onClick={onClick}
-      className='bg-surface border border-border rounded-2xl p-6 hover:border-coral-vibrant/50 hover:shadow-md transition-all duration-300 cursor-pointer group'
-    >
-      <div className='relative w-24 h-24 mx-auto mb-4'>
-        {artist.image && !imageError ? (
-          <Image
-            src={artist.image}
-            alt={artist.name}
-            fill
-            className='rounded-full object-cover'
-            onError={handleImageError}
-            sizes='96px'
-            priority={false}
-          />
-        ) : (
-          <div className='w-full h-full bg-gradient-ocean rounded-full flex items-center justify-center'>
-            <svg
-              className='w-8 h-8 text-white'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
+    <li>
+      <button
+        type='button'
+        onClick={onClick}
+        className='group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 py-4 text-left'
+      >
+        <span className='relative block h-10 w-10 shrink-0 overflow-hidden rounded-sm border border-border'>
+          {hasImage ? (
+            <Image
+              src={artist.image as string}
+              alt={artist.name}
+              fill
+              className='object-cover'
+              onError={() => setImageError(true)}
+              sizes='40px'
+            />
+          ) : (
+            <span
+              aria-hidden='true'
+              className='flex h-full w-full items-center justify-center bg-surface-elevated text-[13px] font-bold text-muted'
             >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
-              />
-            </svg>
-          </div>
-        )}
-      </div>
+              {getInitials(artist.name)}
+            </span>
+          )}
+        </span>
 
-      <div className='text-center'>
-        <h3 className='text-lg font-semibold text-foreground mb-2 group-hover:text-coral-vibrant transition-colors'>
-          {artist.name}
-        </h3>
+        <span className='min-w-0'>
+          <span className='block truncate text-[15px] font-bold transition-colors group-hover:text-accent'>
+            {artist.name}
+          </span>
+          {metaParts.length > 0 && (
+            <span className='mt-1 block truncate text-[13px] text-muted'>
+              {metaParts.join("  /  ")}
+            </span>
+          )}
+        </span>
 
-        {artist.country && (
-          <p className='text-sm text-muted mb-2 flex items-center justify-center gap-1'><MapPin className="w-4 h-4" /> {artist.country}</p>
-        )}
-
-        {artist.birthDate && (
-          <p className='text-sm text-muted mb-3 flex items-center justify-center gap-1'>
-            <Calendar className="w-4 h-4" /> {new Date(artist.birthDate).getFullYear()}
-          </p>
-        )}
-
-        {artist.genres.length > 0 && (
-          <div className='mb-3'>
-            <div className='flex flex-wrap justify-center gap-1'>
-              {artist.genres.slice(0, 3).map((genre, index) => (
+        <span className='flex items-center gap-3'>
+          {artist.genres.length > 0 && (
+            <span className='hidden max-w-[220px] flex-wrap justify-end gap-1.5 sm:flex'>
+              {artist.genres.slice(0, 2).map((genre, index) => (
                 <span
                   key={index}
-                  className='px-2 py-1 bg-coral-vibrant/15 text-coral-vibrant text-xs rounded-full font-medium'
+                  className='chip border-accent/20 bg-accent-soft text-accent'
                 >
                   {genre}
                 </span>
               ))}
-              {artist.genres.length > 3 && (
-                <span className='px-2 py-1 bg-surface-elevated text-muted text-xs rounded-full'>
-                  +{artist.genres.length - 3}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {artist.instruments.length > 0 && (
-          <div className='text-xs text-muted flex items-center justify-center gap-1'>
-            <Music className="w-4 h-4" /> {artist.instruments.slice(0, 2).join(", ")}
-            {artist.instruments.length > 2 && "..."}
-          </div>
-        )}
-      </div>
-
-      <div className='text-center mt-4 opacity-0 group-hover:opacity-100 transition-opacity'>
-        <span className='text-xs text-coral-vibrant'>{dict.results.clickToExplore}</span>
-      </div>
-    </div>
+            </span>
+          )}
+          <ArrowRight
+            className='h-4 w-4 shrink-0 text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent'
+            strokeWidth={1.5}
+            aria-hidden='true'
+          />
+        </span>
+      </button>
+    </li>
   )
 }

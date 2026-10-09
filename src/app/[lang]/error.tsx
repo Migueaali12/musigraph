@@ -16,30 +16,22 @@ export default function Error({
   }, [error])
 
   return (
-    <div className='min-h-screen bg-background flex items-center justify-center p-6'>
-      <div className='text-center max-w-md'>
-        <div className='w-20 h-20 mx-auto mb-6 bg-coral-vibrant/10 rounded-full flex items-center justify-center'>
-          <AlertTriangle className='w-10 h-10 text-coral-vibrant' />
-        </div>
-        <h2 className='text-2xl font-bold text-foreground mb-3'>
+    <div className='flex min-h-screen items-center justify-center p-6'>
+      <div className='max-w-md text-center'>
+        <AlertTriangle className='mx-auto mb-4 h-5 w-5 text-accent' strokeWidth={1.5} aria-hidden='true' />
+        <h2 className='mb-2 text-xl font-bold'>
           Something went wrong
         </h2>
-        <p className='text-muted mb-6 text-sm'>
+        <p className='mb-6 text-[13px] leading-relaxed text-muted'>
           {error.message || 'An unexpected error occurred. Please try again.'}
         </p>
-        <div className='flex gap-3 justify-center'>
-          <button
-            onClick={reset}
-            className='px-6 py-2.5 bg-coral-vibrant text-white rounded-lg hover:bg-coral-vibrant/90 transition-colors inline-flex items-center gap-2 font-medium'
-          >
-            <RefreshCw className='w-4 h-4' />
+        <div className='flex justify-center gap-3'>
+          <button onClick={reset} className='btn btn-primary'>
+            <RefreshCw className='h-3.5 w-3.5' strokeWidth={1.5} aria-hidden='true' />
             Try again
           </button>
-          <Link
-            href='/en'
-            className='px-6 py-2.5 bg-surface border border-border text-foreground rounded-lg hover:bg-surface-elevated transition-colors inline-flex items-center gap-2 font-medium'
-          >
-            <ArrowLeft className='w-4 h-4' />
+          <Link href='/en' className='control'>
+            <ArrowLeft className='h-3.5 w-3.5' strokeWidth={1.5} aria-hidden='true' />
             Go home
           </Link>
         </div>

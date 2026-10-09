@@ -5,6 +5,7 @@ import { SearchBar } from "@/components/search/SearchBar"
 import { SearchResults } from "@/components/search/SearchResults"
 import { ArtistProfile } from "@/components/artist/ArtistProfile"
 import { AppStats } from "@/components/common/AppStats"
+import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import { Header } from "@/components/common/Header"
 import { sparqlService, type ArtistInfo } from "@/services/sparqlService"
 import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
@@ -28,8 +29,8 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [endpoint, setEndpoint] = useState("https://query.wikidata.org/sparql")
 
-  function handleEndpointChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setEndpoint(e.target.value)
+  function handleEndpointChange(value: string) {
+    setEndpoint(value)
     setSelectedArtist(null)
     setSearchResults([])
     setSearchTerm("")
@@ -55,66 +56,84 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
 
   const handleArtistSelect = (artist: ArtistInfo) => {
     setSelectedArtist(artist)
+    window.scrollTo({ top: 0 })
   }
 
   const handleBack = () => {
     setSelectedArtist(null)
-  }
-
-  if (selectedArtist) {
-    return (
-      <div className='min-h-screen bg-background text-foreground transition-colors duration-300 p-6'>
-        <ArtistProfile
-          artist={selectedArtist}
-          onBack={handleBack}
-          endpoint={endpoint}
-          dict={dict}
-        />
-      </div>
-    )
+    window.scrollTo({ top: 0 })
   }
 
   return (
-    <div className='min-h-screen bg-background text-foreground transition-colors duration-300'>
+    <div className='min-h-screen text-foreground'>
       <Header endpoint={endpoint} onEndpointChange={handleEndpointChange} dict={dict} locale={locale} />
 
-      <main className='flex flex-col items-center justify-center px-6 py-12 max-w-6xl mx-auto'>
-        <div className='text-center mb-12'>
-          <h2 className='text-4xl md:text-5xl font-extrabold text-foreground mb-4'>
-            {dict.home.title}
-          </h2>
-          <p className='text-lg text-muted max-w-2xl mx-auto'>
-            {dict.home.subtitle}
-          </p>
-        </div>
-        
-        <div className='w-full mb-12'>
-          <SearchBar onSearch={handleSearch} isLoading={isLoading} dict={dict} />
-        </div>
-        
-        {!searchTerm && <AppStats dict={dict} />}
-        
-        <div className='w-full'>
-          <SearchResults
-            results={searchResults}
-            isLoading={isLoading}
-            searchTerm={searchTerm}
-            onArtistSelect={handleArtistSelect}
+      {selectedArtist ? (
+        <main className='mx-auto max-w-6xl px-4 py-10 sm:px-6'>
+          <ArtistProfile
+            artist={selectedArtist}
+            onBack={handleBack}
+            endpoint={endpoint}
             dict={dict}
           />
-        </div>
-      </main>
+        </main>
+      ) : (
+        <main className='mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14'>
+          {/* Hero: headline + search on the left, legend on the right */}
+          <section className='grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-14'>
+            <div className='relative z-20 animate-rise'>
+              <h1 className='mb-4 text-3xl font-bold tracking-tight sm:text-4xl'>
+                {dict.home.title}
+              </h1>
+              <p className='mb-8 max-w-prose text-[15px] leading-relaxed text-muted'>
+                {dict.home.subtitle}
+              </p>
+              <SearchBar onSearch={handleSearch} isLoading={isLoading} dict={dict} />
+            </div>
 
-      <footer className='text-center py-8 text-muted'>
-        <p className='mb-2'>
+            <AppStats dict={dict} />
+          </section>
+
+          {!searchTerm && (
+            <WelcomeMessage dict={dict} onSearch={(term) => handleSearch(term, {})} />
+          )}
+
+          <div className='mt-10'>
+            <SearchResults
+              results={searchResults}
+              isLoading={isLoading}
+              searchTerm={searchTerm}
+              onArtistSelect={handleArtistSelect}
+              dict={dict}
+            />
+          </div>
+        </main>
+      )}
+
+      <footer className='border-t border-border py-8 text-center text-xs text-muted'>
+        <p>
           {dict.home.providedBy}{" "}
           {endpoint.includes("dbpedia") ? (
-            <a href='https://dbpedia.org' target='_blank' rel='noopener noreferrer' className='text-coral-vibrant hover:text-coral-vibrant/80 transition-colors'>DBpedia</a>
+            <a
+              href='https://dbpedia.org'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='link text-accent'
+            >
+              DBpedia
+            </a>
           ) : (
-            <a href='https://wikidata.org' target='_blank' rel='noopener noreferrer' className='text-coral-vibrant hover:text-coral-vibrant/80 transition-colors'>Wikidata</a>
+            <a
+              href='https://wikidata.org'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='link text-accent'
+            >
+              Wikidata
+            </a>
           )}
         </p>
-        <p className='text-sm'>{dict.home.footerText}</p>
+        <p className='mt-1'>{dict.home.footerText}</p>
       </footer>
     </div>
   )

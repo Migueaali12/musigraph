@@ -1,64 +1,60 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Music, Lightbulb, Globe, Search, BarChart3 } from "lucide-react"
+import { Globe, Search, BarChart3 } from "lucide-react"
+import { QUICK_SEARCH_TERMS } from "@/utils/constants"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface WelcomeMessageProps {
   dict: Dictionary
+  onSearch: (term: string) => void
 }
 
-export function WelcomeMessage({ dict }: WelcomeMessageProps) {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const examples = [
-    "The Beatles",
-    "Pink Floyd",
-    "Queen",
-    "Bob Dylan",
-    "Miles Davis",
-    "Radiohead",
+export function WelcomeMessage({ dict, onSearch }: WelcomeMessageProps) {
+  const features = [
+    { icon: Globe, text: dict.welcome.realTimeData },
+    { icon: Search, text: dict.welcome.smartSearch },
+    { icon: BarChart3, text: dict.welcome.interactiveViz },
   ]
 
-  if (!isVisible) return null
-
   return (
-    <div className='text-center mb-8 animate-in fade-in duration-1000'>
-      <div className='bg-surface border border-border rounded-2xl p-8 shadow-sm'>
-        <h3 className='text-2xl font-bold text-foreground mb-4 flex items-center justify-center gap-1'>
-          {dict.welcome.title} <Music className="w-6 h-6" />
-        </h3>
-        <p className='text-muted mb-6 max-w-2xl mx-auto'>
-          {dict.welcome.description}
-        </p>
+    <section
+      aria-labelledby='welcome-heading'
+      style={{ animationDelay: "120ms" }}
+      className='animate-rise mt-12 border-t border-border pt-8'
+    >
+      <h2
+        id='welcome-heading'
+        className='mb-4 text-[11px] font-bold uppercase tracking-[0.14em] text-muted'
+      >
+        {dict.welcome.trySearch}
+      </h2>
 
-        <div className='mb-4'>
-          <p className='text-sm text-muted mb-3 flex items-center justify-center gap-1'>
-            <Lightbulb className="w-4 h-4" /> {dict.welcome.trySearch}
-          </p>
-          <div className='flex flex-wrap justify-center gap-2'>
-            {examples.map((artist, index) => (
-              <span
-                key={index}
-                className='px-3 py-1 bg-coral-vibrant/15 text-coral-vibrant rounded-full text-sm font-medium'
-              >
-                {artist}
-              </span>
-            ))}
-          </div>
-        </div>
+      <ul className='flex flex-wrap gap-x-6 gap-y-2'>
+        {QUICK_SEARCH_TERMS.map((term) => (
+          <li key={term}>
+            <button
+              type='button'
+              onClick={() => onSearch(term)}
+              className='link text-[15px] font-bold hover:text-accent'
+            >
+              {term}
+            </button>
+          </li>
+        ))}
+      </ul>
 
-        <div className='text-xs text-muted space-y-1'>
-          <p className="flex items-center justify-center gap-1"><Globe className="w-4 h-4" /> {dict.welcome.realTimeData}</p>
-          <p className="flex items-center justify-center gap-1"><Search className="w-4 h-4" /> {dict.welcome.smartSearch}</p>
-          <p className="flex items-center justify-center gap-1"><BarChart3 className="w-4 h-4" /> {dict.welcome.interactiveViz}</p>
-        </div>
-      </div>
-    </div>
+      <ul className='mt-8 grid gap-4 sm:grid-cols-3'>
+        {features.map(({ icon: Icon, text }) => (
+          <li key={text} className='flex items-start gap-3'>
+            <Icon
+              className='mt-0.5 h-4 w-4 shrink-0 text-accent'
+              strokeWidth={1.5}
+              aria-hidden='true'
+            />
+            <span className='text-[13px] leading-relaxed text-muted'>{text}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

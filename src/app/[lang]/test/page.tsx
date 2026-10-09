@@ -287,7 +287,7 @@ export default function TestPage() {
   }
 
   return (
-    <div className='min-h-screen bg-linear-to-br from-deep-night via-acoustic-gray to-deep-night p-8'>
+    <div className='min-h-screen bg-linear-to-br from-gray-950 via-gray-800 to-gray-950 p-8'>
       <div className='max-w-6xl mx-auto'>
         {/* Header */}
         <div className='text-center mb-8'>
@@ -302,7 +302,7 @@ export default function TestPage() {
           <div className='flex justify-center gap-4'>
             <Link
               href='/'
-              className='px-4 py-2 bg-coral-vibrant text-white rounded-lg hover:bg-coral-vibrant/80 transition-colors'
+              className='px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity'
             >
               ← Ir a la App Principal
             </Link>
@@ -323,7 +323,7 @@ export default function TestPage() {
                 type='text'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className='w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-coral-vibrant'
+                className='w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ring'
                 placeholder='Ej: Beatles, Lennon, Dylan...'
               />
             </div>
@@ -331,27 +331,27 @@ export default function TestPage() {
               <button
                 onClick={quickConnectivityTest}
                 disabled={isLoading}
-                className='bg-gradient-sunrise text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50'
+                className='bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50'
               >
                 {isLoading ? "Conectando..." : "Test Rápido"}
               </button>
               <button
                 onClick={runAllTests}
                 disabled={isLoading}
-                className='bg-gradient-energy text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50'
+                className='bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50'
               >
                 {isLoading ? "Ejecutando..." : "Ejecutar Pruebas"}
               </button>
               <button
                 onClick={testSpecificArtist}
                 disabled={isLoading}
-                className='bg-gradient-ocean text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50'
+                className='bg-primary text-primary-foreground px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50'
               >
                 Probar Artistas
               </button>
               <button
                 onClick={clearResults}
-                className='bg-acoustic-gray text-white px-6 py-2 rounded-lg font-medium hover:bg-opacity-80 transition-colors'
+                className='bg-gray-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors'
               >
                 Limpiar
               </button>
@@ -422,19 +422,19 @@ export default function TestPage() {
             </h3>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               <div className='text-center'>
-                <div className='text-2xl font-bold text-coral-vibrant'>
+                <div className='text-2xl font-bold text-accent'>
                   {results.length}
                 </div>
                 <div className='text-gray-400'>Pruebas Ejecutadas</div>
               </div>
               <div className='text-center'>
-                <div className='text-2xl font-bold text-turquoise-musical'>
+                <div className='text-2xl font-bold text-turquoise'>
                   {results.filter((r) => !r.error).length}
                 </div>
                 <div className='text-gray-400'>Exitosas</div>
               </div>
               <div className='text-center'>
-                <div className='text-2xl font-bold text-blue-harmonic'>
+                <div className='text-2xl font-bold text-blue'>
                   {Math.round(
                     results.reduce((acc, r) => acc + r.duration, 0) /
                       results.length
@@ -444,7 +444,7 @@ export default function TestPage() {
                 <div className='text-gray-400'>Tiempo Promedio</div>
               </div>
               <div className='text-center'>
-                <div className='text-2xl font-bold text-green-melodic'>
+                <div className='text-2xl font-bold text-green'>
                   {
                     results.filter(
                       (r) =>

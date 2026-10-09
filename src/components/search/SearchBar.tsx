@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { QUICK_SEARCH_TERMS } from "@/utils/constants"
 import { FilterPanel } from "./FilterPanel"
 import { Search, SlidersHorizontal } from "lucide-react"
 import type { Dictionary } from "@/dictionaries/getDictionary"
@@ -33,74 +32,63 @@ export function SearchBar({ onSearch, isLoading, dict }: SearchBarProps) {
     }
   }
 
-  const handleQuickSearch = (term: string) => {
-    setSearchTerm(term)
-    onSearch(term, filters)
-  }
-
   return (
-    <div className='w-full max-w-4xl mx-auto'>
-      <form onSubmit={handleSubmit} className='mb-6'>
+    <div className='w-full'>
+      <form onSubmit={handleSubmit}>
         <div className='relative'>
-          <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-            <Search className='w-5 h-5 text-muted z-10' />
-          </div>
+          <span
+            aria-hidden='true'
+            className='pointer-events-none absolute inset-y-0 left-4 flex select-none items-center text-sm font-bold text-accent'
+          >
+            &gt;
+          </span>
           <input
             type='text'
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={dict.search.placeholder}
-            className='w-full pl-12 pr-36 py-4 bg-surface border border-border rounded-2xl text-foreground placeholder-muted text-lg focus:outline-none focus:ring-2 focus:ring-coral-vibrant focus:border-transparent transition-all shadow-sm'
+            aria-label={dict.search.placeholder}
+            className='h-12 w-full rounded-sm border border-border bg-surface pl-10 pr-40 text-base placeholder:text-muted transition-colors focus:border-foreground sm:pr-56'
             disabled={isLoading}
           />
-          <div className='absolute inset-y-0 right-0 flex items-center'>
+          <div className='absolute inset-y-0 right-2 flex items-center gap-1.5'>
             <button
               type='button'
-              onClick={() => setShowFilters(!showFilters)}
-              className='mr-2 px-3 py-2 bg-surface-elevated border border-border text-foreground rounded-lg hover:bg-border transition-colors text-sm flex items-center gap-1.5'
+              onClick={() => setShowFilters((prev) => !prev)}
+              className='control'
               disabled={isLoading}
               aria-expanded={showFilters}
               aria-controls='filter-panel'
             >
-              <SlidersHorizontal className='w-4 h-4' />
-              {dict.search.filters}
+              <SlidersHorizontal className='h-4 w-4' strokeWidth={1.5} aria-hidden='true' />
+              <span className='hidden sm:inline'>{dict.search.filters}</span>
             </button>
             <button
               type='submit'
               disabled={isLoading || !hasInput}
-              className='mr-2 px-6 py-2 bg-gradient-energy text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 text-sm'
+              className='btn btn-primary'
             >
-              {isLoading ? dict.search.searching : dict.search.search}
+              <Search className='h-3.5 w-3.5 sm:hidden' strokeWidth={1.5} aria-hidden='true' />
+              <span className='hidden sm:inline'>
+                {isLoading ? dict.search.searching : dict.search.search}
+              </span>
+              <span className='sm:hidden sr-only'>
+                {isLoading ? dict.search.searching : dict.search.search}
+              </span>
             </button>
           </div>
         </div>
+
+        {showFilters && (
+          <div id='filter-panel' className='mt-3'>
+            <FilterPanel
+              filters={filters}
+              onFilterChange={setFilters}
+              dict={dict}
+            />
+          </div>
+        )}
       </form>
-
-      {showFilters && (
-        <div id='filter-panel'>
-          <FilterPanel
-            filters={filters}
-            onFilterChange={setFilters}
-            dict={dict}
-          />
-        </div>
-      )}
-
-      <div className='text-center'>
-        <p className='text-muted-foreground text-sm mb-3'>{dict.search.popularSearches}</p>
-        <div className='flex flex-wrap justify-center gap-2'>
-          {QUICK_SEARCH_TERMS.map((term) => (
-            <button
-              key={term}
-              onClick={() => handleQuickSearch(term)}
-              disabled={isLoading}
-              className='px-4 py-2 bg-surface border border-border text-foreground rounded-full text-sm hover:border-coral-vibrant/50 hover:text-coral-vibrant transition-colors disabled:opacity-50'
-            >
-              {term}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

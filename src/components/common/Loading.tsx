@@ -7,18 +7,20 @@ export function Loading({
   message = "Cargando...",
   size = "md",
 }: LoadingProps) {
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-8 h-8",
-    lg: "w-12 h-12",
+  const textClasses = {
+    sm: "text-xs",
+    md: "text-[13px]",
+    lg: "text-[15px]",
   }
 
   return (
-    <div className='flex flex-col items-center justify-center p-8'>
-      <div
-        className={`${sizeClasses[size]} animate-spin rounded-full border-4 border-coral-vibrant border-t-transparent`}
-      />
-      <p className='mt-4 text-white text-center'>{message}</p>
+    <div
+      role='status'
+      aria-live='polite'
+      className='flex flex-col items-center justify-center gap-2 p-8'
+    >
+      <p className={`text-muted ${textClasses[size]}`}>{message}</p>
+      <span aria-hidden='true' className='blink cursor-block text-muted' />
     </div>
   )
 }

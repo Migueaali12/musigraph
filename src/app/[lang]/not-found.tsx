@@ -1,25 +1,19 @@
 import Link from 'next/link'
-import { ArrowLeft, Music } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 export default function NotFound() {
   return (
-    <div className='min-h-screen bg-background flex items-center justify-center p-6'>
-      <div className='text-center max-w-md'>
-        <div className='w-20 h-20 mx-auto mb-6 bg-gradient-energy rounded-full flex items-center justify-center'>
-          <Music className='w-10 h-10 text-white' />
-        </div>
-        <h2 className='text-6xl font-bold text-coral-vibrant mb-3'>404</h2>
-        <h3 className='text-2xl font-bold text-foreground mb-3'>
+    <div className='flex min-h-screen items-center justify-center p-6'>
+      <div className='max-w-md text-center'>
+        <p className='mb-2 text-5xl font-bold tracking-tight text-accent'>404</p>
+        <h3 className='mb-2 text-xl font-bold'>
           Page Not Found
         </h3>
-        <p className='text-muted mb-6'>
+        <p className='mb-6 text-[13px] leading-relaxed text-muted'>
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
-        <Link
-          href='/en'
-          className='px-6 py-2.5 bg-coral-vibrant text-white rounded-lg hover:bg-coral-vibrant/90 transition-colors inline-flex items-center gap-2 font-medium'
-        >
-          <ArrowLeft className='w-4 h-4' />
+        <Link href='/en' className='control'>
+          <ArrowLeft className='h-3.5 w-3.5' strokeWidth={1.5} aria-hidden='true' />
           Go home
         </Link>
       </div>

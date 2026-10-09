@@ -1,4 +1,3 @@
-import { BarChart3 } from "lucide-react"
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { ProcessedArtistData } from "@/services/dataProcessor"
 import type { Dictionary } from "@/dictionaries/getDictionary"
@@ -27,42 +26,41 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
         )
       : ""
 
+  const stats = [
+    {
+      value: processedData.statistics.totalAlbums,
+      label: dict.artist.statAlbums,
+    },
+    {
+      value: processedData.statistics.totalInfluences,
+      label: dict.artist.statInfluences,
+    },
+    {
+      value: processedData.statistics.totalCollaborations,
+      label: dict.artist.statCollaborations,
+    },
+  ]
+
   return (
     <div className='space-y-8'>
-      <div>
-        <h3 className='text-2xl font-bold text-foreground mb-4 flex items-center gap-2'>
-          <BarChart3 className='w-6 h-6 text-coral-vibrant' />
-          {dict.artist.overviewTitle}
-        </h3>
-        <p className='text-muted text-lg leading-relaxed'>
-          {dict.artist.overviewDescription
-            .replace("{name}", artist.name)
-            .replace("{country}", countryPart)
-            .replace("{activeSince}", activePart)
-            .replace("{genres}", genresPart)}
-        </p>
-      </div>
+      <p className='max-w-prose text-[15px] leading-relaxed text-muted'>
+        {dict.artist.overviewDescription
+          .replace("{name}", artist.name)
+          .replace("{country}", countryPart)
+          .replace("{activeSince}", activePart)
+          .replace("{genres}", genresPart)}
+      </p>
 
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-        <div className='bg-gradient-energy rounded-2xl p-6 text-center'>
-          <div className='text-3xl font-bold text-white mb-2'>
-            {processedData.statistics.totalAlbums}
-          </div>
-          <div className='text-white/80'>{dict.artist.statAlbums}</div>
-        </div>
-        <div className='bg-gradient-ocean rounded-2xl p-6 text-center'>
-          <div className='text-3xl font-bold text-white mb-2'>
-            {processedData.statistics.totalInfluences}
-          </div>
-          <div className='text-white/80'>{dict.artist.statInfluences}</div>
-        </div>
-        <div className='bg-gradient-sunrise rounded-2xl p-6 text-center'>
-          <div className='text-3xl font-bold text-white mb-2'>
-            {processedData.statistics.totalCollaborations}
-          </div>
-          <div className='text-white/80'>{dict.artist.statCollaborations}</div>
-        </div>
-      </div>
+      <ul className='grid grid-cols-3 divide-x divide-border border-y border-border'>
+        {stats.map((stat) => (
+          <li key={stat.label} className='px-2 py-6 text-center'>
+            <p className='text-2xl font-bold sm:text-3xl'>{stat.value}</p>
+            <p className='mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted sm:text-[11px]'>
+              {stat.label}
+            </p>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
