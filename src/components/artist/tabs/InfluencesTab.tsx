@@ -1,8 +1,7 @@
-import { Lightbulb, MapPin } from "lucide-react"
-import { EmptyState } from "@/components/common/EmptyState"
-import { Badge } from "@/components/common/Badge"
+import { Lightbulb } from "lucide-react"
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { Dictionary } from "@/dictionaries/getDictionary"
+import { TabEmpty } from "./TabEmpty"
 
 interface InfluencesTabProps {
   influences: ArtistInfo[]
@@ -12,7 +11,7 @@ interface InfluencesTabProps {
 export function InfluencesTab({ influences, dict }: InfluencesTabProps) {
   if (influences.length === 0) {
     return (
-      <EmptyState
+      <TabEmpty
         icon={Lightbulb}
         title={dict.artist.noInfluences}
         description={dict.artist.noInfluencesDesc}
@@ -21,34 +20,30 @@ export function InfluencesTab({ influences, dict }: InfluencesTabProps) {
   }
 
   return (
-    <div>
-      <h3 className='mb-6 flex items-center gap-2 text-2xl font-bold text-foreground'>
-        <Lightbulb className='h-6 w-6 text-coral-deep dark:text-coral-vibrant' />
-        {dict.artist.influencesTab}
-      </h3>
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {influences.map((influence, index) => (
-          <div
-            key={influence.id || index}
-            className='rounded-2xl border border-border bg-surface-elevated p-4 transition-colors hover:border-coral-deep/30 dark:hover:border-coral-vibrant/40'
-          >
-            <h4 className='mb-2 font-semibold text-foreground'>{influence.name}</h4>
-            {influence.country && (
-              <p className='mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground'>
-                <MapPin className='h-4 w-4' />
-                {influence.country}
-              </p>
-            )}
-            {influence.genres.length > 0 && (
-              <div className='flex flex-wrap gap-1.5'>
-                {influence.genres.slice(0, 3).map((genre, genreIndex) => (
-                  <Badge key={genreIndex}>{genre}</Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+    <ul className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+      {influences.map((influence, index) => (
+        <li
+          key={influence.id || index}
+          className='rounded-md border border-border p-4 transition-colors hover:border-accent/40'
+        >
+          <h4 className='text-sm font-bold'>{influence.name}</h4>
+          {influence.country && (
+            <p className='mt-1 text-[13px] text-muted'>{influence.country}</p>
+          )}
+          {influence.genres.length > 0 && (
+            <div className='mt-2.5 flex flex-wrap gap-1.5'>
+              {influence.genres.slice(0, 3).map((genre, genreIndex) => (
+                <span
+                  key={genreIndex}
+                  className='chip border-turquoise/20 bg-turquoise-soft text-turquoise'
+                >
+                  {genre}
+                </span>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   )
 }

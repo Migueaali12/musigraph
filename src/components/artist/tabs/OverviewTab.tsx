@@ -1,4 +1,3 @@
-import { BarChart3 } from "lucide-react"
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { ProcessedArtistData } from "@/services/dataProcessor"
 import type { Dictionary } from "@/dictionaries/getDictionary"
@@ -7,22 +6,6 @@ interface OverviewTabProps {
   artist: ArtistInfo
   processedData: ProcessedArtistData
   dict: Dictionary
-}
-
-interface StatTileProps {
-  value: number
-  label: string
-}
-
-function StatTile({ value, label }: StatTileProps) {
-  return (
-    <div className='rounded-2xl border border-border bg-surface-elevated p-6 text-center'>
-      <div className='font-mono text-3xl font-bold text-coral-deep dark:text-coral-vibrant'>
-        {value}
-      </div>
-      <div className='mt-1 text-sm text-muted-foreground'>{label}</div>
-    </div>
-  )
 }
 
 export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
@@ -43,36 +26,41 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
         )
       : ""
 
+  const stats = [
+    {
+      value: processedData.statistics.totalAlbums,
+      label: dict.artist.statAlbums,
+    },
+    {
+      value: processedData.statistics.totalInfluences,
+      label: dict.artist.statInfluences,
+    },
+    {
+      value: processedData.statistics.totalCollaborations,
+      label: dict.artist.statCollaborations,
+    },
+  ]
+
   return (
     <div className='space-y-8'>
-      <div>
-        <h3 className='mb-4 flex items-center gap-2 text-2xl font-bold text-foreground'>
-          <BarChart3 className='h-6 w-6 text-coral-deep dark:text-coral-vibrant' />
-          {dict.artist.overviewTitle}
-        </h3>
-        <p className='text-lg leading-relaxed text-muted-foreground'>
-          {dict.artist.overviewDescription
-            .replace("{name}", artist.name)
-            .replace("{country}", countryPart)
-            .replace("{activeSince}", activePart)
-            .replace("{genres}", genresPart)}
-        </p>
-      </div>
+      <p className='max-w-prose text-[15px] leading-relaxed text-muted'>
+        {dict.artist.overviewDescription
+          .replace("{name}", artist.name)
+          .replace("{country}", countryPart)
+          .replace("{activeSince}", activePart)
+          .replace("{genres}", genresPart)}
+      </p>
 
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
-        <StatTile
-          value={processedData.statistics.totalAlbums}
-          label={dict.artist.statAlbums}
-        />
-        <StatTile
-          value={processedData.statistics.totalInfluences}
-          label={dict.artist.statInfluences}
-        />
-        <StatTile
-          value={processedData.statistics.totalCollaborations}
-          label={dict.artist.statCollaborations}
-        />
-      </div>
+      <ul className='grid grid-cols-3 divide-x divide-border border-y border-border'>
+        {stats.map((stat) => (
+          <li key={stat.label} className='px-2 py-6 text-center'>
+            <p className='text-2xl font-bold sm:text-3xl'>{stat.value}</p>
+            <p className='mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted sm:text-[11px]'>
+              {stat.label}
+            </p>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

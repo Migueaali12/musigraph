@@ -1,14 +1,8 @@
 import type { Metadata } from "next"
-import { Inter, Space_Mono } from "next/font/google"
+import { Space_Mono } from "next/font/google"
 import "@/app/globals.css"
 import { getDictionary, type Locale } from "@/dictionaries/getDictionary"
 import { ThemeProvider } from "@/components/common/ThemeProvider"
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-})
 
 const spaceMono = Space_Mono({
   variable: "--font-space-mono",
@@ -48,8 +42,13 @@ export default async function RootLayout({ children, params }: LayoutProps) {
   const { lang } = await params
 
   return (
-    <html lang={lang} suppressHydrationWarning>
-      <body className={`${inter.variable} ${spaceMono.variable} antialiased`}>
+    <html lang={lang} className={spaceMono.variable} suppressHydrationWarning>
+      <body className='antialiased'>
+        {/* Fixed graph-paper grid behind all content */}
+        <div
+          aria-hidden='true'
+          className='bg-grid pointer-events-none fixed inset-0 -z-10'
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

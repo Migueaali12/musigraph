@@ -2,10 +2,9 @@
 
 import { useState } from "react"
 import { type ArtistInfo } from "@/services/sparqlService"
-import { EmptyState } from "@/components/common/EmptyState"
-import { Badge } from "@/components/common/Badge"
 import Image from "next/image"
-import { Lightbulb, MapPin, Calendar, Music, Search, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
+import { getInitials } from "@/utils/format"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface SearchResultsProps {
@@ -16,24 +15,6 @@ interface SearchResultsProps {
   dict: Dictionary
 }
 
-function ResultSkeleton() {
-  return (
-    <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className='animate-pulse rounded-2xl border border-border bg-surface p-6'
-        >
-          <div className='mx-auto mb-4 h-24 w-24 rounded-full bg-surface-elevated' />
-          <div className='mx-auto h-5 w-2/3 rounded bg-surface-elevated' />
-          <div className='mx-auto mt-2 h-4 w-1/2 rounded bg-surface-elevated' />
-          <div className='mx-auto mt-4 h-6 w-3/4 rounded bg-surface-elevated' />
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export function SearchResults({
   results,
   isLoading,
@@ -42,36 +23,57 @@ export function SearchResults({
   dict,
 }: SearchResultsProps) {
   if (isLoading) {
-    return <ResultSkeleton />
+    return (
+      <div className='animate-rise'>
+        <p className='mb-4 flex items-center gap-2 text-[13px] text-muted'>
+          {dict.results.searchingUniverse}
+          <span aria-hidden='true' className='blink cursor-block text-accent' />
+        </p>
+        <ul className='divide-y divide-border border-y border-border'>
+          {[0, 1, 2].map((i) => (
+            <li key={i} className='flex items-center gap-4 py-4'>
+              <div className='h-10 w-10 shrink-0 animate-pulse rounded-sm bg-surface-elevated' />
+              <div className='flex-1 space-y-2'>
+                <div className='h-3.5 w-40 animate-pulse rounded-xs bg-surface-elevated' />
+                <div className='h-3 w-64 max-w-full animate-pulse rounded-xs bg-surface-elevated' />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
   }
 
   if (!searchTerm) {
-    return (
-      <EmptyState
-        icon={Search}
-        title={dict.results.discoverUniverse}
-        description={dict.results.discoverDescription}
-      />
-    )
+    return null
   }
 
   if (results.length === 0) {
     return (
-      <div>
-        <EmptyState
-          icon={Search}
-          title={dict.results.noResults.replace("{searchTerm}", searchTerm)}
-          description={dict.results.noResultsDescription}
-        />
-        <div className='mx-auto max-w-md text-center'>
-          <p className='mb-2 flex items-center justify-center gap-1.5 text-sm font-medium text-foreground'>
-            <Lightbulb className='h-4 w-4 text-coral-deep dark:text-coral-vibrant' />
+      <div className='animate-rise border-y border-border py-14 text-center'>
+        <h3 className='mb-2 text-lg font-bold'>
+          {dict.results.noResults.replace("{searchTerm}", searchTerm)}
+        </h3>
+        <p className='mx-auto mb-8 max-w-md text-[13px] leading-relaxed text-muted'>
+          {dict.results.noResultsDescription}
+        </p>
+        <div className='mx-auto max-w-sm rounded-sm border border-border bg-surface p-4 text-left'>
+          <p className='mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted'>
             {dict.results.suggestions}
           </p>
-          <ul className='space-y-1 text-sm text-muted-foreground'>
-            <li>{dict.results.suggestion1}</li>
-            <li>{dict.results.suggestion2}</li>
-            <li>{dict.results.suggestion3}</li>
+          <ul className='space-y-1.5 text-[13px] text-muted'>
+            <li className='flex gap-2'>
+              <span aria-hidden='true' className='text-accent'>&gt;</span>
+              {dict.results.suggestion1}
+            </li>
+            <li className='flex gap-2'>
+              <span aria-hidden='true' className='text-accent'>&gt;</span>
+              {dict.results.suggestion2}
+            </li>
+            <li className='flex gap-2'>
+              <span aria-hidden='true' className='text-accent'>&gt;</span>
+              {dict.results.suggestion3}
+            </li>
           </ul>
         </div>
       </div>
@@ -83,99 +85,105 @@ export function SearchResults({
     : dict.results.foundArtistsMany.replace("{count}", String(results.length))
 
   return (
-    <div>
-      <div className='mb-6'>
-        <h2 className='mb-2 text-2xl font-bold text-foreground'>
+    <div className='animate-rise'>
+      <div className='mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1'>
+        <h2 className='text-xl font-bold tracking-tight'>
           {dict.results.resultsFor.replace("{searchTerm}", searchTerm)}
         </h2>
-        <p className='text-muted-foreground'>{artistCountText}</p>
+        <p className='text-[13px] text-muted'>{artistCountText}</p>
       </div>
 
-      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+      <ul className='divide-y divide-border border-y border-border'>
         {results.map((artist) => (
-          <ArtistCard
+          <ArtistRow
             key={artist.id}
             artist={artist}
             onClick={() => onArtistSelect(artist)}
-            dict={dict}
           />
         ))}
-      </div>
+      </ul>
     </div>
   )
 }
 
-interface ArtistCardProps {
+interface ArtistRowProps {
   artist: ArtistInfo
   onClick: () => void
-  dict: Dictionary
 }
 
-function ArtistCard({ artist, onClick, dict }: ArtistCardProps) {
+function ArtistRow({ artist, onClick }: ArtistRowProps) {
   const [imageError, setImageError] = useState(false)
 
+  const hasImage = Boolean(artist.image) && !imageError
+  const year = artist.birthDate
+    ? new Date(artist.birthDate).getFullYear()
+    : null
+
+  const metaParts: string[] = []
+  if (artist.country) metaParts.push(artist.country)
+  if (year) metaParts.push(String(year))
+  if (artist.instruments.length > 0) {
+    metaParts.push(artist.instruments.slice(0, 2).join(", "))
+  }
+
   return (
-    <button
-      type='button'
-      onClick={onClick}
-      className='group flex flex-col items-center rounded-2xl border border-border bg-surface p-6 text-center transition-colors hover:border-coral-deep/40 dark:hover:border-coral-vibrant/50'
-    >
-      <div className='relative mb-4 h-24 w-24'>
-        {artist.image && !imageError ? (
-          <Image
-            src={artist.image}
-            alt={artist.name}
-            fill
-            className='rounded-full object-cover'
-            onError={() => setImageError(true)}
-            sizes='96px'
-            priority={false}
-          />
-        ) : (
-          <div className='flex h-full w-full items-center justify-center rounded-full bg-surface-elevated'>
-            <Music className='h-9 w-9 text-muted-foreground' />
-          </div>
-        )}
-      </div>
-
-      <h3 className='mb-2 text-lg font-semibold text-foreground transition-colors group-hover:text-coral-deep dark:group-hover:text-coral-vibrant'>
-        {artist.name}
-      </h3>
-
-      {artist.country && (
-        <p className='mb-2 flex items-center justify-center gap-1 text-sm text-muted-foreground'>
-          <MapPin className='h-4 w-4' /> {artist.country}
-        </p>
-      )}
-
-      {artist.birthDate && (
-        <p className='mb-3 flex items-center justify-center gap-1 text-sm text-muted-foreground'>
-          <Calendar className='h-4 w-4' /> {new Date(artist.birthDate).getFullYear()}
-        </p>
-      )}
-
-      {artist.genres.length > 0 && (
-        <div className='mb-3 flex flex-wrap justify-center gap-1.5'>
-          {artist.genres.slice(0, 3).map((genre, index) => (
-            <Badge key={index}>{genre}</Badge>
-          ))}
-          {artist.genres.length > 3 && (
-            <Badge variant='muted'>+{artist.genres.length - 3}</Badge>
+    <li>
+      <button
+        type='button'
+        onClick={onClick}
+        className='group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 py-4 text-left'
+      >
+        <span className='relative block h-10 w-10 shrink-0 overflow-hidden rounded-sm border border-border'>
+          {hasImage ? (
+            <Image
+              src={artist.image as string}
+              alt={artist.name}
+              fill
+              className='object-cover'
+              onError={() => setImageError(true)}
+              sizes='40px'
+            />
+          ) : (
+            <span
+              aria-hidden='true'
+              className='flex h-full w-full items-center justify-center bg-surface-elevated text-[13px] font-bold text-muted'
+            >
+              {getInitials(artist.name)}
+            </span>
           )}
-        </div>
-      )}
+        </span>
 
-      {artist.instruments.length > 0 && (
-        <div className='flex items-center justify-center gap-1 text-xs text-muted-foreground'>
-          <Music className='h-4 w-4' /> {artist.instruments.slice(0, 2).join(", ")}
-          {artist.instruments.length > 2 && "..."}
-        </div>
-      )}
+        <span className='min-w-0'>
+          <span className='block truncate text-[15px] font-bold transition-colors group-hover:text-accent'>
+            {artist.name}
+          </span>
+          {metaParts.length > 0 && (
+            <span className='mt-1 block truncate text-[13px] text-muted'>
+              {metaParts.join("  /  ")}
+            </span>
+          )}
+        </span>
 
-      <span className='mt-4 inline-flex items-center gap-1 text-xs text-coral-deep opacity-0 transition-opacity group-hover:opacity-100 dark:text-coral-vibrant'>
-        {dict.results.clickToExplore}
-        <ArrowRight className='h-3.5 w-3.5' />
-      </span>
-    </button>
+        <span className='flex items-center gap-3'>
+          {artist.genres.length > 0 && (
+            <span className='hidden max-w-[220px] flex-wrap justify-end gap-1.5 sm:flex'>
+              {artist.genres.slice(0, 2).map((genre, index) => (
+                <span
+                  key={index}
+                  className='chip border-accent/20 bg-accent-soft text-accent'
+                >
+                  {genre}
+                </span>
+              ))}
+            </span>
+          )}
+          <ArrowRight
+            className='h-4 w-4 shrink-0 text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent'
+            strokeWidth={1.5}
+            aria-hidden='true'
+          />
+        </span>
+      </button>
+    </li>
   )
 }

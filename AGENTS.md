@@ -22,64 +22,100 @@ MusiGraph is a web application that allows users to explore the musical universe
 - **Format**: SVG vector for scalability
 - **Usage**: Header, favicon, and branding elements
 
+### Design Direction
+- **Concept**: "Engineering notebook". The graph-paper dot grid is the visual signature.
+- **Light theme**: warm paper (`#f8f7f4`) with ink text and hairline borders.
+- **Dark theme**: night blueprint (`#0f0f23`) with the same dot grid.
+- **Rules**: one accent color (coral), no gradients anywhere, no drop shadows, hairline borders for structure, motion is CSS-only and artisanal (no GSAP).
+
 ### Typography
-- **Main Font**: Inter
-- **Location**: `public/fonts/Inter/`
-- **Variants**: Variable font with weights from 100 to 900
-- **Implementation**: CSS `font-family: 'Inter', sans-serif;`
+- **Main Font**: Space Mono (weights 400 and 700)
+- **Implementation**: `next/font/google` exposed as `--font-space-mono`, mapped to `--font-sans` and `--font-mono`
+- **Important**: the `spaceMono.variable` class must live on `<html>` (not `<body>`). `--font-sans` is declared on `:root`, so `--font-space-mono` has to exist on `<html>` for the `var()` reference to resolve; if it only lives on `<body>`, `--font-sans` becomes invalid at computed-value time and everything silently falls back to `system-ui`.
+- **Rule**: Space Mono is the only typeface in the UI. Do not introduce Inter, Roboto, or system-sans fallbacks for content.
+- **Scale**: micro labels 11px uppercase `tracking-[0.14em]`; body 15px / line-height 1.7; headings tight (`tracking-tight`, line-height ~1.15). Numbers align naturally because the font is monospaced.
 
 ### Color Palette
 
-#### Primary Colors
-- **Coral Vibrant**: `#ff6b6b` - Main action color and highlighted elements
-- **Turquoise Musical**: `#4ecdc4` - Secondary color for interactive elements
-- **Blue Harmonic**: `#45b7d1` - Tertiary color for information and data
+#### Accent (single UI accent)
+- **Coral Vibrant**: `#ff6b6b` - brand accent, fills and borders only
+- **Accent text (light)**: `#a83232` - accessible coral for text/links on light (6.19:1)
+- **Accent text (dark)**: `#ff9e9e` - accessible coral for text/links on dark (9.5:1)
+- **Rule**: coral is never used as light text on a light background, and never as a large solid fill behind white text.
 
-#### Secondary Colors
-- **Green Melodic**: `#96ceb4` - Color for success and confirmation elements
-- **Gold Rhythmic**: `#ffeaa7` - Color for warning and highlighted elements
-- **Pink Symphonic**: `#fd79a8` - Color for special and premium elements
+#### Category Colors (chips/tags only)
+- **Turquoise Musical**: text `#1f6c63` (light) / `#7fded6` (dark)
+- **Blue Harmonic**: text `#1f6c9f` (light) / `#7cc7e8` (dark)
+- **Green Melodic**: text `#346538` (light) / `#a8d8be` (dark)
+- Chips use a 10-14% wash background of the same hue plus the accessible text variant.
 
 #### Backgrounds and Neutrals
-- **Deep Night**: `#0f0f23` - Main dark background
-- **Soft Midnight**: `#1a1a2e` - Secondary background and containers
-- **Acoustic Gray**: `#2d3748` - Neutral color for text and borders
-- **Pure White**: `#ffffff` - Main text on dark backgrounds
+- **Engineering Paper**: `#f8f7f4` - light background
+- **Deep Night**: `#0f0f23` - dark background and primary ink in light mode
+- **Soft Midnight**: `#1a1a2e` - dark surface and containers
+- **Muted**: `#565e6b` (light, 6.11:1) / `#94a3b8` (dark)
 
 #### Gradients
-- **Gradient Energy**: `linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%)` - For high-energy elements
-- **Gradient Ocean**: `linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%)` - For calm and data elements
-- **Gradient Sunrise**: `linear-gradient(135deg, #fd79a8 0%, #ffeaa7 100%)` - For special elements
+- **Removed**: the former gradient tokens do not exist anymore. Do not reintroduce gradients; use flat fills, hairlines, and the dot grid.
 
-### Icons
-- **Library**: Lucide Icons (`lucide-react`)
-- **Usage**: Always prefer Lucide Icons over emojis or text symbols for UI elements
-- **Implementation**: Import individual icons from `lucide-react` and use as React components
-- **Rationale**: Consistent visual style, better accessibility, scalable vector graphics, themeable
+### Shape and Focus
+- **Radius system**: 2px chips, 4px controls/inputs, 6px panels. Nothing larger.
+- **Focus**: global `:focus-visible` outline, 2px `var(--ring)` with 2px offset. Do not remove outlines.
+- **Icons**: Lucide only, standardized `strokeWidth={1.5}`, sizes 14/16/20. No emojis.
+
+### Motion
+- CSS-only: `rise` entry (320ms, `cubic-bezier(0.16, 1, 0.3, 1)`), hand-drawn link underline, blinking block cursor for search/loading states.
+- Animate only `transform`, `opacity`, and colors. No `transition-all`.
+- Everything must respect `prefers-reduced-motion`.
 
 ### CSS Implementation
 ```css
 :root {
-  /* Primary Colors */
-  --coral-vibrant: #ff6b6b;
-  --turquoise-musical: #4ecdc4;
-  --blue-harmonic: #45b7d1;
-  
-  /* Secondary Colors */
-  --green-melodic: #96ceb4;
-  --gold-rhythmic: #ffeaa7;
-  --pink-symphonic: #fd79a8;
-  
-  /* Backgrounds and Neutrals */
-  --deep-night: #0f0f23;
-  --soft-midnight: #1a1a2e;
-  --acoustic-gray: #2d3748;
-  --pure-white: #ffffff;
-  
-  /* Gradients */
-  --gradient-energy: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
-  --gradient-ocean: linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%);
-  --gradient-sunrise: linear-gradient(135deg, #fd79a8 0%, #ffeaa7 100%);
+  /* Light theme: engineering paper */
+  --background: #f8f7f4;
+  --foreground: #0f0f23;
+  --surface: #ffffff;
+  --surface-elevated: #f1f0ec;
+  --border: #e2e0db;
+  --muted: #565e6b;
+  --primary: #0f0f23;
+  --primary-foreground: #f8f7f4;
+  --ring: #a83232;
+
+  /* Coral accent (fill + accessible text variant) */
+  --accent: #a83232;
+  --accent-soft: rgba(255, 107, 107, 0.1);
+  --accent-vibrant: #ff6b6b;
+
+  /* Category colors (chips only) */
+  --turquoise: #1f6c63;
+  --blue: #1f6c9f;
+  --green: #346538;
+
+  /* Graph-paper dot grid */
+  --grid-dot: rgba(15, 15, 35, 0.08);
+}
+
+.dark {
+  --background: #0f0f23;
+  --foreground: #f8f7f4;
+  --surface: #1a1a2e;
+  --surface-elevated: #232338;
+  --border: rgba(248, 247, 244, 0.12);
+  --muted: #94a3b8;
+  --primary: #ff6b6b;
+  --primary-foreground: #0f0f23;
+  --ring: #ff9e9e;
+
+  --accent: #ff9e9e;
+  --accent-soft: rgba(255, 107, 107, 0.14);
+  --accent-vibrant: #ff6b6b;
+
+  --turquoise: #7fded6;
+  --blue: #7cc7e8;
+  --green: #a8d8be;
+
+  --grid-dot: rgba(248, 247, 244, 0.07);
 }
 ```
 
