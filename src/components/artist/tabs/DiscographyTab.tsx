@@ -26,7 +26,7 @@ export function DiscographyTab({ discography, dict }: DiscographyTabProps) {
         const year = extractYear(album.releaseDate)
         return (
           <li
-            key={album.id || index}
+            key={album.id || `${album.title}-${index}`}
             className='grid grid-cols-[4.5rem_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1 py-3.5 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto]'
           >
             <span className='text-[13px] text-muted'>{year ?? "/"}</span>

@@ -254,18 +254,45 @@ function rankSearchResults(artists: ArtistInfo[], searchTerm: string): ArtistInf
 
 function processAlbumResults(response: SparqlResponse, provider: ProviderId): AlbumInfo[] {
   const isDbpedia = provider === "dbpedia"
+  const albums = new Map<string, AlbumInfo>()
 
-  return response.results.bindings.map((binding) => {
+  for (const binding of response.results.bindings) {
     const rawId = binding.album?.value ?? ""
-    return {
-      id: isDbpedia ? rawId : lastPathSegment(rawId),
-      title: binding.albumLabel?.value ?? lastPathSegment(rawId),
-      releaseDate: binding.releaseDate?.value,
-      label: binding.labelLabel?.value,
-      genre: binding.genreLabel?.value,
-      type: binding.albumTypeLabel?.value,
+    const id = isDbpedia ? rawId : lastPathSegment(rawId)
+    const title = binding.albumLabel?.value ?? id
+    const key = id || title
+    if (!key) continue
+
+    const existing = albums.get(key)
+    if (!existing) {
+      albums.set(key, {
+        id,
+        title,
+        releaseDate: binding.releaseDate?.value,
+        label: binding.labelLabel?.value,
+        genre: binding.genreLabel?.value,
+        type: binding.albumTypeLabel?.value,
+      })
+      continue
     }
-  })
+
+    // Merge duplicate rows of the same release: an album can carry several
+    // labels/genres, which would otherwise repeat with the same React key.
+    if (!existing.releaseDate && binding.releaseDate?.value) {
+      existing.releaseDate = binding.releaseDate.value
+    }
+    if (!existing.label && binding.labelLabel?.value) {
+      existing.label = binding.labelLabel.value
+    }
+    if (!existing.genre && binding.genreLabel?.value) {
+      existing.genre = binding.genreLabel.value
+    }
+    if (!existing.type && binding.albumTypeLabel?.value) {
+      existing.type = binding.albumTypeLabel.value
+    }
+  }
+
+  return [...albums.values()]
 }
 
 function processCollaborationResults(response: SparqlResponse): CollaborationInfo[] {

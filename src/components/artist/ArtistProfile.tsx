@@ -313,13 +313,16 @@ export function ArtistProfile({
               <OverviewTab artist={artist} processedData={processedData} dict={dict} />
             )}
             {activeTab === "discography" && (
-              <DiscographyTab discography={discography} dict={dict} />
+              <DiscographyTab discography={processedData.discography} dict={dict} />
             )}
             {activeTab === "influences" && (
-              <InfluencesTab influences={influences} dict={dict} />
+              <InfluencesTab influences={processedData.influences} dict={dict} />
             )}
             {activeTab === "collaborations" && (
-              <CollaborationsTab collaborations={collaborations} dict={dict} />
+              <CollaborationsTab
+                collaborations={processedData.collaborations}
+                dict={dict}
+              />
             )}
           </>
         )}
