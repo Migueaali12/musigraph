@@ -1,5 +1,6 @@
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { ProcessedArtistData } from "@/services/dataProcessor"
+import { extractYear } from "@/utils/date"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface OverviewTabProps {
@@ -12,12 +13,11 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
   const countryPart = artist.country
     ? dict.artist.overviewDescriptionCountry.replace("{country}", artist.country)
     : ""
-  const activePart = artist.birthDate
-    ? dict.artist.overviewDescriptionActive.replace(
-        "{year}",
-        String(new Date(artist.birthDate).getFullYear())
-      )
-    : ""
+  const birthYear = extractYear(artist.birthDate)
+  const activePart =
+    birthYear !== null
+      ? dict.artist.overviewDescriptionActive.replace("{year}", String(birthYear))
+      : ""
   const genresPart =
     artist.genres.length > 0
       ? dict.artist.overviewDescriptionGenres.replace(

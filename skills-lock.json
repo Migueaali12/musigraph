@@ -53,6 +53,13 @@
       "sourceType": "autoskills-registry",
       "computedHash": "c184da724d1c61ad077f27418ea8e7e88fd54bcdf98165e18be7e4681cbd5e20"
     },
+    "sparql": {
+      "source": "sparkling/claude-config",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/sparql/SKILL.md",
+      "computedHash": "4898151b11922fd92baa111dcf3bea5061e70d25d2dfc09dc264db4d58b86995"
+    },
     "tailwind-css-patterns": {
       "source": "giuseppe-trisciuoglio/developer-kit",
       "sourceType": "autoskills-registry",

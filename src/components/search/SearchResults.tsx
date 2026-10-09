@@ -157,8 +157,17 @@ function ArtistRow({ artist, onClick }: ArtistRowProps) {
           <span className='block truncate text-[15px] font-bold transition-colors group-hover:text-accent'>
             {artist.name}
           </span>
-          {metaParts.length > 0 && (
+          {artist.description && (
             <span className='mt-1 block truncate text-[13px] text-muted'>
+              {artist.description}
+            </span>
+          )}
+          {metaParts.length > 0 && (
+            <span
+              className={`block truncate text-[13px] text-muted ${
+                artist.description ? "mt-0.5" : "mt-1"
+              }`}
+            >
               {metaParts.join("  /  ")}
             </span>
           )}

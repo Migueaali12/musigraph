@@ -10,10 +10,6 @@ import { Loading } from "@/components/common/Loading"
 import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 import {
   fetchDiscographyFromMusicBrainz,
-  fetchCollaborationsFromMusicBrainz,
-  fetchInfluencesFromMusicBrainz,
-  fetchDeepCollaborationsFromMusicBrainz,
-  fetchDeepInfluencesFromMusicBrainz,
 } from "@/services/musicbrainzService"
 
 interface TestResult {
@@ -205,30 +201,6 @@ export default function TestPage() {
     await runTest("MusicBrainz Discografía Helper", async () => {
       const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
       return await fetchDiscographyFromMusicBrainz(mbid)
-    })
-
-    // Test 8: Colaboraciones desde MusicBrainz helper
-    await runTest("MusicBrainz Colaboraciones Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchCollaborationsFromMusicBrainz(mbid)
-    })
-
-    // Test 9: Influencias desde MusicBrainz helper
-    await runTest("MusicBrainz Influencias Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchInfluencesFromMusicBrainz(mbid)
-    })
-
-    // Test 10: Colaboraciones profundas desde MusicBrainz (releases)
-    await runTest("MusicBrainz Deep Colaboraciones Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchDeepCollaborationsFromMusicBrainz(mbid, 3)
-    })
-
-    // Test 11: Influencias profundas desde MusicBrainz (releases)
-    await runTest("MusicBrainz Deep Influencias Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchDeepInfluencesFromMusicBrainz(mbid, 3)
     })
 
     setIsLoading(false)

@@ -70,6 +70,9 @@
     "statAlbums": "Albums",
     "statInfluences": "Influences",
     "statCollaborations": "Collaborations",
+    "worksCount": "{count} works",
+    "albumWork": "Album",
+    "moreWorks": "+{count} more",
     "noDiscography": "No discography available",
     "noDiscographyDesc": "We found no registered albums for this artist in Wikidata.",
     "noInfluences": "No influences recorded",
@@ -79,6 +82,7 @@
     "with": "With {artist}"
   },
   "header": {
+    "dataSource": "Data source:",
     "endpoint": "Endpoint:",
     "language": "Language",
     "en": "EN",

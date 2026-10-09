@@ -21,8 +21,10 @@ import {
 } from "lucide-react"
 import { fetchDiscographyFromMusicBrainz } from "@/services/musicbrainzService"
 import { getInitials, stripColon } from "@/utils/format"
+import { extractYear } from "@/utils/date"
+import { PROVIDERS, type ProviderId } from "@/services/providers"
 import { Select, type SelectOption } from "@/components/common/Select"
-import type { Dictionary } from "@/dictionaries/getDictionary"
+import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
 import { OverviewTab } from "./tabs/OverviewTab"
 import { DiscographyTab } from "./tabs/DiscographyTab"
 import { InfluencesTab } from "./tabs/InfluencesTab"
@@ -70,14 +72,16 @@ function TabSkeleton() {
 interface ArtistProfileProps {
   artist: ArtistInfo
   onBack: () => void
-  endpoint: string
+  provider: ProviderId
+  locale: Locale
   dict: Dictionary
 }
 
 export function ArtistProfile({
   artist,
   onBack,
-  endpoint,
+  provider,
+  locale,
   dict,
 }: ArtistProfileProps) {
   const [discography, setDiscography] = useState<AlbumInfo[]>([])
@@ -106,9 +110,9 @@ export function ArtistProfile({
         } else {
           const [discographyData, influencesData, collaborationsData] =
             await Promise.all([
-              sparqlService.getArtistDiscography(artist.id, artist.mbid, endpoint),
-              sparqlService.getArtistInfluences(artist.id, endpoint),
-              sparqlService.getCollaborations(artist.id, endpoint),
+              sparqlService.getArtistDiscography(artist.id, artist.mbid, provider, locale),
+              sparqlService.getArtistInfluences(artist.id, provider, locale),
+              sparqlService.getCollaborations(artist.id, provider, locale),
             ])
           if (!cancelled) {
             setDiscography(discographyData)
@@ -125,7 +129,7 @@ export function ArtistProfile({
 
     loadData()
     return () => { cancelled = true }
-  }, [artist.id, artist.mbid, endpoint, detailSource])
+  }, [artist.id, artist.mbid, provider, locale, detailSource])
 
   const processedData: ProcessedArtistData = dataProcessor.processArtistData(
     artist,
@@ -134,12 +138,13 @@ export function ArtistProfile({
     collaborations
   )
 
+  const birthYear = extractYear(artist.birthDate)
   const canShowMusicBrainz = Boolean(artist.mbid)
 
   const sourceOptions: SelectOption[] = [
     {
       value: "endpoint",
-      label: endpoint.includes("dbpedia") ? "DBpedia" : "Wikidata",
+      label: PROVIDERS[provider].label,
     },
     ...(canShowMusicBrainz
       ? [{ value: "musicbrainz", label: "MusicBrainz" }]
@@ -208,10 +213,10 @@ export function ArtistProfile({
               </>
             )}
 
-            {artist.birthDate && (
+            {birthYear !== null && (
               <>
                 <dt className={metaLabelClass}>{stripColon(dict.artist.year)}</dt>
-                <dd>{new Date(artist.birthDate).getFullYear()}</dd>
+                <dd>{birthYear}</dd>
               </>
             )}
 

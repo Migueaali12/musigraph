@@ -1,4 +1,31 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { resolveProvider, type Lang, type ProviderInfo } from "@/services/providers"
+import {
+  buildArtistProfileQuery,
+  buildArtistTraitsQuery,
+  buildBatchLabelsQuery,
+  buildCollaborationsQuery,
+  buildDiscographyQuery,
+  buildGenreSearchQuery,
+  buildInfluencesQuery,
+  buildWorkTypeQuery,
+} from "@/services/queries/wikidata"
+import {
+  buildDbpediaArtistSearchQuery,
+  buildDbpediaArtistTraitsQuery,
+  buildDbpediaCollaborationsQuery,
+  buildDbpediaDiscographyQuery,
+  buildDbpediaInfluencesQuery,
+} from "@/services/queries/dbpedia"
+import { TtlCache } from "@/services/serverCache"
+import { FEATURED_ARTIST_IDS } from "@/utils/constants"
+import {
+  isAllowedDecade,
+  isDbpediaResource,
+  isQid,
+  sanitizeSearchTerm,
+  sanitizeTextIndexTerm,
+} from "@/utils/validation"
 
 // Allow up to 30 s for outbound SPARQL calls (Vercel / Next.js serverless)
 export const maxDuration = 30
@@ -6,7 +33,7 @@ export const maxDuration = 30
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface SparqlBinding {
-  [key: string]: { value: string; type: string }
+  [key: string]: { value: string; type: string; "xml:lang"?: string; datatype?: string }
 }
 
 interface SparqlResponse {
@@ -26,28 +53,30 @@ interface SparqlRequestBody {
   params: Record<string, string | undefined>
 }
 
-// ── Endpoints ──────────────────────────────────────────────────────────────
+const EMPTY_RESPONSE: SparqlResponse = { results: { bindings: [] } }
 
-const WIKIDATA_ENDPOINT = "https://query.wikidata.org/sparql"
-const DBPEDIA_ENDPOINT = "https://dbpedia.org/sparql"
+// ── Response cache (per serverless instance) ───────────────────────────────
 
-// ── Core fetch (server-side only — endpoint URL never exposed to client) ───
+const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
+const responseCache = new TtlCache<SparqlResponse>(300, CACHE_TTL_MS)
+
+// ── Core fetch (server-side only — endpoint URLs never reach the client) ───
 
 async function executeSparqlQuery(
   query: string,
-  endpoint: string = WIKIDATA_ENDPOINT
+  provider: ProviderInfo,
+  attempt = 0
 ): Promise<SparqlResponse> {
   // Abort after 25 s so we return a clean error before Next.js hard-kills the function
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 25_000)
   const start = Date.now()
-
-  const endpointLabel = endpoint.includes("dbpedia") ? "DBpedia" : "Wikidata"
   const queryPreview = query.replace(/\s+/g, " ").trim().slice(0, 120)
-  console.log(`[SPARQL] → ${endpointLabel} | query: ${queryPreview}…`)
+
+  console.log(`[SPARQL] → ${provider.label} | query: ${queryPreview}…`)
 
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(provider.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/sparql-query",
@@ -60,22 +89,50 @@ async function executeSparqlQuery(
 
     const elapsed = Date.now() - start
 
+    // Public endpoints throttle with 429 + Retry-After and occasionally
+    // return transient 502/503/504: retry once, briefly.
+    const retriableStatus = [429, 502, 503, 504]
+    if (retriableStatus.includes(response.status) && attempt < 1) {
+      const retryAfter = Number(response.headers.get("retry-after") ?? "1")
+      const waitMs = Math.min(Math.max(retryAfter, 1), 5) * 1000
+      console.warn(
+        `[SPARQL] ${response.status} from ${provider.label}, retrying in ${waitMs} ms`
+      )
+      await new Promise((resolve) => setTimeout(resolve, waitMs))
+      return executeSparqlQuery(query, provider, attempt + 1)
+    }
+
     if (!response.ok) {
-      console.error(`[SPARQL] ✗ ${endpointLabel} HTTP ${response.status} ${response.statusText} (${elapsed} ms)`)
+      console.error(
+        `[SPARQL] ✗ ${provider.label} HTTP ${response.status} ${response.statusText} (${elapsed} ms)`
+      )
       throw new Error(`SPARQL query failed: ${response.statusText}`)
+    }
+
+    // Virtuoso (DBpedia) returns partial results with HTTP 200 — surface it in logs.
+    if (provider.engine === "virtuoso") {
+      const maxRows = response.headers.get("x-sparql-maxrows")
+      const sqlMessage = response.headers.get("x-sql-message")
+      if (maxRows || sqlMessage) {
+        console.warn(
+          `[SPARQL] ⚠ ${provider.label} returned PARTIAL results (${sqlMessage ?? `maxRows=${maxRows}`})`
+        )
+      }
     }
 
     const data = (await response.json()) as SparqlResponse
     const count = data.results?.bindings?.length ?? 0
-    console.log(`[SPARQL] ✓ ${endpointLabel} | ${count} result(s) | ${elapsed} ms`)
+    console.log(`[SPARQL] ✓ ${provider.label} | ${count} result(s) | ${elapsed} ms`)
     return data
   } catch (err) {
     const elapsed = Date.now() - start
     if (err instanceof Error && err.name === "AbortError") {
-      console.error(`[SPARQL] ✗ ${endpointLabel} | TIMEOUT after ${elapsed} ms`)
+      console.error(`[SPARQL] ✗ ${provider.label} | TIMEOUT after ${elapsed} ms`)
       throw new Error("SPARQL query timed out after 25 seconds")
     }
-    console.error(`[SPARQL] ✗ ${endpointLabel} | ${err instanceof Error ? err.message : String(err)} (${elapsed} ms)`)
+    console.error(
+      `[SPARQL] ✗ ${provider.label} | ${err instanceof Error ? err.message : String(err)} (${elapsed} ms)`
+    )
     throw err
   } finally {
     clearTimeout(timeoutId)
@@ -83,6 +140,8 @@ async function executeSparqlQuery(
 }
 
 // ── Wikidata entity-search via MediaWiki API (indexed — much faster than SPARQL CONTAINS) ───
+// v2-compatible design: the MediaWiki API call already happens outside SPARQL,
+// so the removal of wikibase:mwapi in WDQS v2 does not affect us.
 
 async function resolveWikidataEntityIds(
   name: string,
@@ -112,7 +171,7 @@ async function resolveWikidataEntityIds(
       return []
     }
     const data = (await res.json()) as { search?: { id: string }[] }
-    const ids = (data.search ?? []).map((item) => item.id)
+    const ids = (data.search ?? []).map((item) => item.id).filter(isQid)
     console.log(`[wbsearch] ✓ ${ids.length} entity ID(s) in ${Date.now() - start} ms → ${ids.join(", ")}`)
     return ids
   } catch (err) {
@@ -123,322 +182,394 @@ async function resolveWikidataEntityIds(
   }
 }
 
-// ── Query builders ─────────────────────────────────────────────────────────
+// ── Batched post-processing (QLever has no label service) ──────────────────
+
+interface LabelTarget {
+  entityVar: string
+  labelVar: string
+  descriptionVar?: string
+}
+
+const SEARCH_LABEL_TARGETS: LabelTarget[] = [
+  { entityVar: "artist", labelVar: "artistLabel", descriptionVar: "artistDescription" },
+  { entityVar: "country", labelVar: "countryLabel" },
+  { entityVar: "genre", labelVar: "genreLabel" },
+  { entityVar: "instrument", labelVar: "instrumentLabel" },
+  { entityVar: "instanceType", labelVar: "instanceTypeLabel" },
+  { entityVar: "occupation", labelVar: "occupationLabel" },
+]
+
+const DISCOGRAPHY_LABEL_TARGETS: LabelTarget[] = [
+  { entityVar: "album", labelVar: "albumLabel" },
+  { entityVar: "label", labelVar: "labelLabel" },
+  { entityVar: "genre", labelVar: "genreLabel" },
+  { entityVar: "albumType", labelVar: "albumTypeLabel" },
+]
+
+const DBPEDIA_DISCOGRAPHY_LABEL_TARGETS: LabelTarget[] = [
+  { entityVar: "album", labelVar: "albumLabel" },
+  { entityVar: "label", labelVar: "labelLabel" },
+  { entityVar: "genre", labelVar: "genreLabel" },
+]
+
+const INFLUENCE_LABEL_TARGETS: LabelTarget[] = [
+  { entityVar: "influence", labelVar: "influenceLabel" },
+  { entityVar: "country", labelVar: "countryLabel" },
+  { entityVar: "genre", labelVar: "genreLabel" },
+]
+
+const COLLABORATION_LABEL_TARGETS: LabelTarget[] = [
+  { entityVar: "work", labelVar: "workLabel" },
+  { entityVar: "collaborator", labelVar: "collaboratorLabel" },
+]
+
+/** Resolve labels (and optionally descriptions) for every entity in result sets. */
+async function attachLabels(
+  responses: SparqlResponse[],
+  targets: LabelTarget[],
+  lang: Lang,
+  provider: ProviderInfo
+): Promise<void> {
+  const bindings = responses.flatMap((response) => response.results.bindings)
+  const entities = new Set<string>()
+
+  for (const row of bindings) {
+    for (const target of targets) {
+      const value = row[target.entityVar]?.value
+      if (value?.startsWith("http")) entities.add(value)
+    }
+  }
+  if (entities.size === 0) return
+
+  const needsDescriptions = targets.some((target) => target.descriptionVar)
+
+  try {
+    const query = buildBatchLabelsQuery([...entities], lang, {
+      descriptions: needsDescriptions,
+    })
+    const labelResponse = await executeSparqlQuery(query, provider)
+
+    const resolved = new Map<string, { label?: string; description?: string }>()
+    for (const row of labelResponse.results.bindings) {
+      const uri = row.entity?.value
+      if (!uri) continue
+      const entry = resolved.get(uri) ?? {}
+      if (!entry.label && row.entityLabel?.value) entry.label = row.entityLabel.value
+      if (!entry.description && row.entityDescription?.value) {
+        entry.description = row.entityDescription.value
+      }
+      resolved.set(uri, entry)
+    }
+
+    for (const row of bindings) {
+      for (const target of targets) {
+        const uri = row[target.entityVar]?.value
+        const hit = uri ? resolved.get(uri) : undefined
+        if (!hit) continue
+        if (hit.label && !row[target.labelVar]) {
+          row[target.labelVar] = { type: "literal", value: hit.label, "xml:lang": lang }
+        }
+        if (target.descriptionVar && hit.description && !row[target.descriptionVar]) {
+          row[target.descriptionVar] = {
+            type: "literal",
+            value: hit.description,
+            "xml:lang": lang,
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Labels are an enhancement: never fail the whole request over them.
+    console.warn(
+      `[SPARQL] label batch failed: ${err instanceof Error ? err.message : String(err)}`
+    )
+  }
+}
+
+/** Classify collaboration works as songs or albums in a batched pass. */
+async function attachWorkTypes(
+  response: SparqlResponse,
+  entityVar: string,
+  provider: ProviderInfo
+): Promise<void> {
+  const bindings = response.results.bindings
+  const works = [
+    ...new Set(
+      bindings
+        .map((row) => row[entityVar]?.value)
+        .filter((value): value is string => Boolean(value?.startsWith("http")))
+    ),
+  ]
+  if (works.length === 0) return
+
+  try {
+    const typeResponse = await executeSparqlQuery(buildWorkTypeQuery(works), provider)
+    const albumWorks = new Set(
+      typeResponse.results.bindings
+        .map((row) => row.entity?.value)
+        .filter((value): value is string => Boolean(value))
+    )
+    for (const row of bindings) {
+      const uri = row[entityVar]?.value
+      if (!uri) continue
+      // Anything not returned by the release-type query is a song.
+      row.workType = { type: "literal", value: albumWorks.has(uri) ? "album" : "song" }
+    }
+  } catch (err) {
+    console.warn(
+      `[SPARQL] work-type batch failed: ${err instanceof Error ? err.message : String(err)}`
+    )
+  }
+}
+
+// ── Action handlers ────────────────────────────────────────────────────────
+
+/** ?prop URI → trait field mapping used by the traits query. */
+const TRAIT_PROPERTY_MAP: Record<string, { entityVar: string; labelVar: string }> = {
+  "http://www.wikidata.org/prop/direct/P136": { entityVar: "genre", labelVar: "genreLabel" },
+  "http://www.wikidata.org/prop/direct/P1303": { entityVar: "instrument", labelVar: "instrumentLabel" },
+  "http://www.wikidata.org/prop/direct/P31": { entityVar: "instanceType", labelVar: "instanceTypeLabel" },
+  "http://www.wikidata.org/prop/direct/P106": { entityVar: "occupation", labelVar: "occupationLabel" },
+}
+
+/** Rewrite ?prop/?trait rows into the named fields consumers expect. */
+function mapTraitBindings(response: SparqlResponse): void {
+  for (const row of response.results.bindings) {
+    const prop = row.prop?.value
+    const mapping = prop ? TRAIT_PROPERTY_MAP[prop] : undefined
+    if (!mapping) continue
+    if (row.trait) row[mapping.entityVar] = row.trait
+    if (row.traitLabel) row[mapping.labelVar] = row.traitLabel
+    delete row.prop
+    delete row.trait
+    delete row.traitLabel
+  }
+}
+
+function mergeResponses(responses: SparqlResponse[]): SparqlResponse {
+  return {
+    results: {
+      bindings: responses.flatMap((response) => response.results.bindings),
+    },
+  }
+}
+
+/**
+ * Run the profile + traits query pair for a set of artist ids.
+ * Split in two to avoid cartesian products from multi-valued properties
+ * (genres × occupations × instruments) blowing up the result set.
+ */
+async function runArtistQueries(
+  artistIds: string[],
+  filters: { genre?: string; decade?: string },
+  provider: ProviderInfo,
+  lang: Lang
+): Promise<SparqlResponse> {
+  const [profileResult, traitsResult] = await Promise.allSettled([
+    executeSparqlQuery(
+      buildArtistProfileQuery(artistIds, filters, provider.engine, lang),
+      provider
+    ),
+    executeSparqlQuery(
+      buildArtistTraitsQuery(artistIds, provider.engine, lang),
+      provider
+    ),
+  ])
+
+  // The profile is essential; traits are an enhancement.
+  if (profileResult.status === "rejected") throw profileResult.reason
+  const responses = [profileResult.value]
+  if (traitsResult.status === "fulfilled") {
+    // Keep only traits of artists that passed the profile filters (e.g. decade),
+    // otherwise filtered-out artists would appear as nameless ghosts.
+    const profileArtists = new Set(
+      profileResult.value.results.bindings
+        .map((row) => row.artist?.value)
+        .filter((value): value is string => Boolean(value))
+    )
+    traitsResult.value.results.bindings = traitsResult.value.results.bindings.filter(
+      (row) => {
+        const uri = row.artist?.value
+        return Boolean(uri && profileArtists.has(uri))
+      }
+    )
+    mapTraitBindings(traitsResult.value)
+    responses.push(traitsResult.value)
+  } else {
+    console.warn(
+      `[SPARQL] traits query failed: ${traitsResult.reason instanceof Error ? traitsResult.reason.message : String(traitsResult.reason)}`
+    )
+  }
+
+  if (provider.engine === "qlever") {
+    await attachLabels(responses, SEARCH_LABEL_TARGETS, lang, provider)
+  }
+
+  return mergeResponses(responses)
+}
 
 async function searchArtist(
   name: string,
   filters: Record<string, string | undefined>,
-  endpoint: string
+  provider: ProviderInfo,
+  lang: Lang
 ): Promise<SparqlResponse> {
-  const isDbpedia = endpoint.includes("dbpedia")
+  // DBpedia has no entity-resolution API here: search by indexed label text.
+  if (provider.engine === "virtuoso") {
+    const term = sanitizeTextIndexTerm(name)
+    if (!term) return EMPTY_RESPONSE
+    const query = buildDbpediaArtistSearchQuery(term, lang, { decade: filters.decade })
+    const response = await executeSparqlQuery(query, provider)
 
-  if (isDbpedia) {
-    let filterStr = ""
-    if (name?.trim()) {
-      filterStr += `FILTER (CONTAINS(LCASE(?artistLabel), LCASE("${name}")))\n`
-    }
-    if (filters.genre) {
-      filterStr += `?artist dbo:genre <http://dbpedia.org/resource/${filters.genre}> .\n`
-    }
-    const query = `
-      SELECT DISTINCT ?artist ?artistLabel ?birthDate ?countryLabel ?genreLabel ?instrumentLabel ?image
-      WHERE {
-        ?artist a dbo:MusicalArtist ;
-                rdfs:label ?artistLabel .
-        FILTER (lang(?artistLabel) = 'es' || lang(?artistLabel) = 'en')
-        ${filterStr}
-        OPTIONAL { ?artist dbo:birthDate ?birthDate }
-        OPTIONAL { ?artist dbo:birthPlace/rdfs:label ?countryLabel . FILTER (lang(?countryLabel) = 'es' || lang(?countryLabel) = 'en') }
-        OPTIONAL { ?artist dbo:genre/rdfs:label ?genreLabel . FILTER (lang(?genreLabel) = 'es' || lang(?genreLabel) = 'en') }
-        OPTIONAL { ?artist dbo:instrument/rdfs:label ?instrumentLabel . FILTER (lang(?instrumentLabel) = 'es' || lang(?instrumentLabel) = 'en') }
-        OPTIONAL { ?artist foaf:depiction ?image }
-        OPTIONAL { ?artist dbo:thumbnail ?image }
+    // Batched genre/country/instrument enrichment for the matched artists.
+    const artistUris = [
+      ...new Set(
+        response.results.bindings
+          .map((row) => row.artist?.value)
+          .filter((value): value is string => Boolean(value))
+      ),
+    ]
+    if (artistUris.length > 0) {
+      try {
+        const traits = await executeSparqlQuery(
+          buildDbpediaArtistTraitsQuery(artistUris, lang),
+          provider
+        )
+        response.results.bindings.push(...traits.results.bindings)
+      } catch (err) {
+        console.warn(
+          `[SPARQL] DBpedia traits batch failed: ${err instanceof Error ? err.message : String(err)}`
+        )
       }
-      ORDER BY ?artistLabel
-      LIMIT 30
-    `
-    return executeSparqlQuery(query, endpoint)
+    }
+
+    return response
   }
 
-  // Wikidata — two-step approach:
-  //  1. Resolve the artist name to Q-IDs via the fast wbsearchentities API
-  //  2. Fetch details with a VALUES-bounded SPARQL query (no full-table scan)
-  const trimmedName = name?.trim() ?? ""
+  const trimmedName = sanitizeSearchTerm(name)
 
+  let artistIds: string[]
   if (trimmedName) {
-    const entityIds = await resolveWikidataEntityIds(trimmedName)
-
-    if (entityIds.length === 0) {
+    artistIds = await resolveWikidataEntityIds(trimmedName)
+    if (artistIds.length === 0) {
       console.log(`[searchArtist] No entity IDs found for "${trimmedName}", returning empty`)
-      return { results: { bindings: [] } }
+      return EMPTY_RESPONSE
     }
-
-    const valuesClause = entityIds.map((id) => `wd:${id}`).join(" ")
-
-    let extraFilters = ""
-    if (filters.genre) extraFilters += `?artist wdt:P136 wd:${filters.genre} .\n`
-    if (filters.decade) {
-      extraFilters += `
-        ?artist wdt:P571 ?formationDate .
-        FILTER (YEAR(?formationDate) >= ${filters.decade} && YEAR(?formationDate) < ${parseInt(filters.decade) + 10})
-      `
-    }
-
-    const query = `
-      PREFIX wd: <http://www.wikidata.org/entity/>
-      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-      PREFIX wikibase: <http://wikiba.se/ontology#>
-      PREFIX bd: <http://www.bigdata.com/rdf#>
-
-      SELECT DISTINCT ?artist ?artistLabel ?mbid ?birthDate ?country ?countryLabel ?genre ?genreLabel ?instrument ?instrumentLabel ?image
-      WHERE {
-        VALUES ?artist { ${valuesClause} }
-        ${extraFilters}
-        OPTIONAL { ?artist wdt:P434 ?mbid }
-        OPTIONAL { ?artist wdt:P569 ?birthDate }
-        OPTIONAL { ?artist wdt:P571 ?birthDate }
-        OPTIONAL { ?artist wdt:P27 ?country }
-        OPTIONAL { ?artist wdt:P495 ?country }
-        OPTIONAL { ?artist wdt:P136 ?genre }
-        OPTIONAL { ?artist wdt:P1303 ?instrument }
-        OPTIONAL { ?artist wdt:P18 ?image }
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-      }
-    `
-    return executeSparqlQuery(query, endpoint)
+  } else {
+    artistIds = [...FEATURED_ARTIST_IDS]
   }
 
-  // No name given — return a curated list of well-known artists (fast VALUES query)
-  const fallbackValues = [
-    "wd:Q1299",  // The Beatles
-    "wd:Q2306",  // Pink Floyd
-    "wd:Q5384",  // Led Zeppelin
-    "wd:Q1321",  // Rolling Stones
-    "wd:Q392",   // Bob Dylan
-    "wd:Q1233",  // Radiohead
-    "wd:Q11649", // Nirvana
-    "wd:Q83160", // David Bowie
-    "wd:Q4930",  // Johnny Cash
-    "wd:Q1364",  // Miles Davis
-  ].join(" ")
-
-  let extraFilters = ""
-  if (filters.genre) extraFilters += `?artist wdt:P136 wd:${filters.genre} .\n`
-
-  const query = `
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX bd: <http://www.bigdata.com/rdf#>
-
-    SELECT DISTINCT ?artist ?artistLabel ?mbid ?birthDate ?country ?countryLabel ?genre ?genreLabel ?instrument ?instrumentLabel ?image
-    WHERE {
-      VALUES ?artist { ${fallbackValues} }
-      ${extraFilters}
-      OPTIONAL { ?artist wdt:P434 ?mbid }
-      OPTIONAL { ?artist wdt:P569 ?birthDate }
-      OPTIONAL { ?artist wdt:P571 ?birthDate }
-      OPTIONAL { ?artist wdt:P27 ?country }
-      OPTIONAL { ?artist wdt:P495 ?country }
-      OPTIONAL { ?artist wdt:P136 ?genre }
-      OPTIONAL { ?artist wdt:P1303 ?instrument }
-      OPTIONAL { ?artist wdt:P18 ?image }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-  `
-  return executeSparqlQuery(query, endpoint)
+  return runArtistQueries(
+    artistIds,
+    { genre: filters.genre, decade: filters.decade },
+    provider,
+    lang
+  )
 }
 
 async function getDiscography(
   artistId: string,
-  endpoint: string
+  provider: ProviderInfo,
+  lang: Lang
 ): Promise<SparqlResponse> {
-  if (endpoint.includes("dbpedia")) {
-    const query = `
-      SELECT DISTINCT ?album ?albumLabel ?releaseDate ?labelLabel ?genreLabel
-      WHERE {
-        ?album a dbo:Album ;
-               dbo:artist <${artistId}> ;
-               rdfs:label ?albumLabel .
-        FILTER (lang(?albumLabel) = 'es' || lang(?albumLabel) = 'en')
-        OPTIONAL { ?album dbo:releaseDate ?releaseDate }
-        OPTIONAL { ?album dbp:released ?releaseDate }
-        OPTIONAL { ?album dbo:recordLabel/rdfs:label ?labelLabel . FILTER (lang(?labelLabel) = 'es' || lang(?labelLabel) = 'en') }
-        OPTIONAL { ?album dbo:genre/rdfs:label ?genreLabel . FILTER (lang(?genreLabel) = 'es' || lang(?genreLabel) = 'en') }
-      }
-      ORDER BY ?releaseDate
-      LIMIT 50
-    `
-    return executeSparqlQuery(query, endpoint)
+  if (provider.engine === "virtuoso") {
+    const response = await executeSparqlQuery(buildDbpediaDiscographyQuery(artistId), provider)
+    await attachLabels([response], DBPEDIA_DISCOGRAPHY_LABEL_TARGETS, lang, provider)
+    return response
   }
 
-  const query = `
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX bd: <http://www.bigdata.com/rdf#>
+  const query = buildDiscographyQuery(artistId, provider.engine, lang)
+  const response = await executeSparqlQuery(query, provider)
 
-    SELECT DISTINCT ?album ?albumLabel ?releaseDate ?label ?labelLabel
-    WHERE {
-      ?album wdt:P31/wdt:P279* wd:Q482994 ;
-             wdt:P175 wd:${artistId} .
-      OPTIONAL { ?album wdt:P577 ?releaseDate }
-      OPTIONAL { ?album wdt:P264 ?label }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY ?releaseDate
-    LIMIT 50
-  `
-  return executeSparqlQuery(query, endpoint)
+  if (provider.engine === "qlever") {
+    await attachLabels([response], DISCOGRAPHY_LABEL_TARGETS, lang, provider)
+  }
+
+  return response
 }
 
 async function getInfluences(
   artistId: string,
-  endpoint: string
+  provider: ProviderInfo,
+  lang: Lang
 ): Promise<SparqlResponse> {
-  if (endpoint.includes("dbpedia")) {
-    const query = `
-      SELECT DISTINCT ?influence ?influenceLabel ?birthDate ?countryLabel ?genreLabel ?image
-      WHERE {
-        <${artistId}> dbo:influencedBy ?influence .
-        ?influence rdfs:label ?influenceLabel .
-        FILTER (lang(?influenceLabel) = 'es' || lang(?influenceLabel) = 'en')
-        OPTIONAL { ?influence dbo:birthDate ?birthDate }
-        OPTIONAL { ?influence dbo:birthPlace/rdfs:label ?countryLabel . FILTER (lang(?countryLabel) = 'es' || lang(?countryLabel) = 'en') }
-        OPTIONAL { ?influence dbo:genre/rdfs:label ?genreLabel . FILTER (lang(?genreLabel) = 'es' || lang(?genreLabel) = 'en') }
-        OPTIONAL { ?influence foaf:depiction ?image }
-        OPTIONAL { ?influence dbo:thumbnail ?image }
-      }
-      LIMIT 20
-    `
-    return executeSparqlQuery(query, endpoint)
+  if (provider.engine === "virtuoso") {
+    const response = await executeSparqlQuery(buildDbpediaInfluencesQuery(artistId), provider)
+    await attachLabels([response], INFLUENCE_LABEL_TARGETS, lang, provider)
+    return response
   }
 
-  const query = `
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX bd: <http://www.bigdata.com/rdf#>
+  const query = buildInfluencesQuery(artistId, provider.engine, lang)
+  const response = await executeSparqlQuery(query, provider)
 
-    SELECT DISTINCT ?influence ?influenceLabel ?birthDate ?country ?countryLabel ?genre ?genreLabel ?image
-    WHERE {
-      wd:${artistId} wdt:P737 ?influence .
-      OPTIONAL { ?influence wdt:P569 ?birthDate }
-      OPTIONAL { ?influence wdt:P571 ?birthDate }
-      OPTIONAL { ?influence wdt:P27 ?country }
-      OPTIONAL { ?influence wdt:P495 ?country }
-      OPTIONAL { ?influence wdt:P136 ?genre }
-      OPTIONAL { ?influence wdt:P18 ?image }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    LIMIT 20
-  `
-  return executeSparqlQuery(query, endpoint)
+  if (provider.engine === "qlever") {
+    await attachLabels([response], INFLUENCE_LABEL_TARGETS, lang, provider)
+  }
+
+  return response
 }
 
 async function getCollaborations(
   artistId: string,
-  endpoint: string
+  provider: ProviderInfo,
+  lang: Lang
 ): Promise<SparqlResponse> {
-  if (endpoint.includes("dbpedia")) {
-    const query = `
-      SELECT DISTINCT ?songLabel ?collaboratorLabel ?releaseDate
-      WHERE {
-        ?song a dbo:Song ;
-              dbo:artist <${artistId}> ;
-              dbo:artist ?collaborator ;
-              rdfs:label ?songLabel .
-        FILTER (?collaborator != <${artistId}>)
-        FILTER (lang(?songLabel) = 'es' || lang(?songLabel) = 'en')
-        ?collaborator rdfs:label ?collaboratorLabel .
-        FILTER (lang(?collaboratorLabel) = 'es' || lang(?collaboratorLabel) = 'en')
-        OPTIONAL { ?song dbo:releaseDate ?releaseDate }
-        OPTIONAL { ?song dbp:released ?releaseDate }
-      }
-      ORDER BY DESC(?releaseDate)
-      LIMIT 30
-    `
-    return executeSparqlQuery(query, endpoint)
+  if (provider.engine === "virtuoso") {
+    const response = await executeSparqlQuery(buildDbpediaCollaborationsQuery(artistId), provider)
+    await attachLabels([response], COLLABORATION_LABEL_TARGETS, lang, provider)
+    return response
   }
 
-  const query = `
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX bd: <http://www.bigdata.com/rdf#>
+  const query = buildCollaborationsQuery(artistId, provider.engine, lang)
+  const response = await executeSparqlQuery(query, provider)
 
-    SELECT DISTINCT ?song ?songLabel ?collaborator ?collaboratorLabel ?releaseDate
-    WHERE {
-      ?song wdt:P31/wdt:P279* wd:Q7366 ;
-            wdt:P175 wd:${artistId} ;
-            wdt:P175 ?collaborator .
-      FILTER(?collaborator != wd:${artistId})
-      OPTIONAL { ?song wdt:P577 ?releaseDate }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY DESC(?releaseDate)
-    LIMIT 30
-  `
-  return executeSparqlQuery(query, endpoint)
+  // Song/album classification for both engines (batched, cheap).
+  await attachWorkTypes(response, "work", provider)
+
+  if (provider.engine === "qlever") {
+    await attachLabels([response], COLLABORATION_LABEL_TARGETS, lang, provider)
+  }
+
+  return response
 }
 
-async function querySearchByGenre(genreId: string): Promise<SparqlResponse> {
-  const query = `
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX bd: <http://www.bigdata.com/rdf#>
+async function searchByGenre(
+  genreId: string,
+  provider: ProviderInfo,
+  lang: Lang
+): Promise<SparqlResponse> {
+  const query = buildGenreSearchQuery(genreId, provider.engine, lang)
+  const response = await executeSparqlQuery(query, provider)
 
-    SELECT DISTINCT ?artist ?artistLabel ?country ?countryLabel ?formationDate
-    WHERE {
-      {
-        ?artist wdt:P31 wd:Q215380 .
-        ?artist wdt:P136 wd:${genreId} .
-      }
-      UNION
-      {
-        ?artist wdt:P31 wd:Q5 .
-        ?artist wdt:P106 wd:Q639669 .
-        ?artist wdt:P136 wd:${genreId} .
-      }
-      OPTIONAL { ?artist wdt:P495 ?country }
-      OPTIONAL { ?artist wdt:P27 ?country }
-      OPTIONAL { ?artist wdt:P571 ?formationDate }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-    ORDER BY ?formationDate
-    LIMIT 20
-  `
-  return executeSparqlQuery(query, WIKIDATA_ENDPOINT)
+  if (provider.engine === "qlever") {
+    await attachLabels(
+      [response],
+      [
+        { entityVar: "artist", labelVar: "artistLabel" },
+        { entityVar: "country", labelVar: "countryLabel" },
+      ],
+      lang,
+      provider
+    )
+  }
+
+  return response
 }
 
-async function queryGetTopBands(): Promise<SparqlResponse> {
-  const query = `
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX bd: <http://www.bigdata.com/rdf#>
-
-    SELECT DISTINCT ?artist ?artistLabel ?country ?countryLabel ?genre ?genreLabel ?image
-    WHERE {
-      VALUES ?artist {
-        wd:Q1299
-        wd:Q2306
-        wd:Q5384
-        wd:Q1321
-        wd:Q392
-      }
-      OPTIONAL { ?artist wdt:P495 ?country }
-      OPTIONAL { ?artist wdt:P27 ?country }
-      OPTIONAL { ?artist wdt:P136 ?genre }
-      OPTIONAL { ?artist wdt:P18 ?image }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "es,en". }
-    }
-  `
-  return executeSparqlQuery(query, WIKIDATA_ENDPOINT)
+async function getTopBands(provider: ProviderInfo, lang: Lang): Promise<SparqlResponse> {
+  return runArtistQueries(
+    [...FEATURED_ARTIST_IDS].slice(0, 5),
+    {},
+    provider,
+    lang
+  )
 }
 
 // ── Route Handler ──────────────────────────────────────────────────────────
+
+function badRequest(message: string) {
+  return NextResponse.json({ error: message }, { status: 400 })
+}
 
 export async function POST(request: NextRequest) {
   const reqStart = Date.now()
@@ -447,63 +578,88 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as SparqlRequestBody
     const { action, params } = body
 
-    const endpoint =
-      params.endpoint === DBPEDIA_ENDPOINT ? DBPEDIA_ENDPOINT : WIKIDATA_ENDPOINT
-    const endpointLabel = endpoint.includes("dbpedia") ? "DBpedia" : "Wikidata"
+    const provider = resolveProvider(params.provider ?? params.endpoint)
+    const lang: Lang = params.lang === "en" ? "en" : "es"
 
-    console.log(`[API /sparql] ← action="${action}" endpoint=${endpointLabel} params=${JSON.stringify(params)}`)
+    // Validate everything that gets interpolated into SPARQL.
+    if (params.genre !== undefined && params.genre !== "" && !isQid(params.genre)) {
+      return badRequest("Invalid genre id")
+    }
+    if (params.decade !== undefined && params.decade !== "" && !isAllowedDecade(params.decade)) {
+      return badRequest("Invalid decade")
+    }
+    if (params.artistId !== undefined && params.artistId !== "") {
+      const validArtistId =
+        provider.engine === "virtuoso"
+          ? isDbpediaResource(params.artistId)
+          : isQid(params.artistId)
+      if (!validArtistId) return badRequest("Invalid artist id")
+    }
+    if (params.genreId !== undefined && params.genreId !== "" && !isQid(params.genreId)) {
+      return badRequest("Invalid genre id")
+    }
+
+    const cacheKey = JSON.stringify({
+      action,
+      provider: provider.id,
+      lang,
+      params: {
+        name: sanitizeSearchTerm(params.name ?? ""),
+        genre: params.genre ?? "",
+        decade: params.decade ?? "",
+        artistId: params.artistId ?? "",
+        genreId: params.genreId ?? "",
+      },
+    })
+    const cached = responseCache.get(cacheKey)
+    if (cached) {
+      console.log(
+        `[API /sparql] ⚡ cache hit action="${action}" provider=${provider.label} lang=${lang}`
+      )
+      return NextResponse.json(cached)
+    }
+
+    console.log(
+      `[API /sparql] ← action="${action}" provider=${provider.label} lang=${lang} params=${JSON.stringify(params)}`
+    )
 
     let result: SparqlResponse
 
     switch (action) {
       case "searchArtist":
-        result = await searchArtist(
-          params.name ?? "",
-          {
-            genre: params.genre,
-            decade: params.decade,
-            artistType: params.artistType,
-          },
-          endpoint
-        )
+        result = await searchArtist(params.name ?? "", params, provider, lang)
         break
 
       case "getArtistDiscography":
-        if (!params.artistId) {
-          return NextResponse.json({ error: "artistId required" }, { status: 400 })
-        }
-        result = await getDiscography(params.artistId, endpoint)
+        if (!params.artistId) return badRequest("artistId required")
+        result = await getDiscography(params.artistId, provider, lang)
         break
 
       case "getArtistInfluences":
-        if (!params.artistId) {
-          return NextResponse.json({ error: "artistId required" }, { status: 400 })
-        }
-        result = await getInfluences(params.artistId, endpoint)
+        if (!params.artistId) return badRequest("artistId required")
+        result = await getInfluences(params.artistId, provider, lang)
         break
 
       case "getCollaborations":
-        if (!params.artistId) {
-          return NextResponse.json({ error: "artistId required" }, { status: 400 })
-        }
-        result = await getCollaborations(params.artistId, endpoint)
+        if (!params.artistId) return badRequest("artistId required")
+        result = await getCollaborations(params.artistId, provider, lang)
         break
 
       case "searchByGenre":
-        if (!params.genreId) {
-          return NextResponse.json({ error: "genreId required" }, { status: 400 })
-        }
-        result = await querySearchByGenre(params.genreId)
+        if (!params.genreId) return badRequest("genreId required")
+        result = await searchByGenre(params.genreId, provider, lang)
         break
 
       case "getTopBands":
-        result = await queryGetTopBands()
+        result = await getTopBands(provider, lang)
         break
 
       default:
         console.warn(`[API /sparql] Unknown action: "${action}"`)
-        return NextResponse.json({ error: "Unknown action" }, { status: 400 })
+        return badRequest("Unknown action")
     }
+
+    responseCache.set(cacheKey, result)
 
     const totalMs = Date.now() - reqStart
     const count = result.results?.bindings?.length ?? 0
