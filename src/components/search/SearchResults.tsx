@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { memo, useState } from "react"
 import { type ArtistInfo } from "@/services/sparqlService"
+import { SourceBadge } from "@/components/common/SourceBadge"
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { getInitials } from "@/utils/format"
@@ -99,7 +100,7 @@ export function SearchResults({
           <ArtistRow
             key={artist.id}
             artist={artist}
-            onClick={() => onArtistSelect(artist)}
+            onSelect={onArtistSelect}
           />
         ))}
       </ul>
@@ -109,10 +110,10 @@ export function SearchResults({
 
 interface ArtistRowProps {
   artist: ArtistInfo
-  onClick: () => void
+  onSelect: (artist: ArtistInfo) => void
 }
 
-function ArtistRow({ artist, onClick }: ArtistRowProps) {
+const ArtistRow = memo(function ArtistRow({ artist, onSelect }: ArtistRowProps) {
   const [imageError, setImageError] = useState(false)
 
   const hasImage = Boolean(artist.image) && !imageError
@@ -129,7 +130,7 @@ function ArtistRow({ artist, onClick }: ArtistRowProps) {
     <li>
       <button
         type='button'
-        onClick={onClick}
+        onClick={() => onSelect(artist)}
         className='group grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 py-4 text-left'
       >
         <span className='relative block h-10 w-10 shrink-0 overflow-hidden rounded-sm border border-border'>
@@ -173,6 +174,7 @@ function ArtistRow({ artist, onClick }: ArtistRowProps) {
         </span>
 
         <span className='flex items-center gap-3'>
+          {artist.source && <SourceBadge source={artist.source} />}
           {artist.genres.length > 0 && (
             <span className='hidden max-w-[220px] flex-wrap justify-end gap-1.5 sm:flex'>
               {artist.genres.slice(0, 2).map((genre, index) => (
@@ -194,4 +196,4 @@ function ArtistRow({ artist, onClick }: ArtistRowProps) {
       </button>
     </li>
   )
-}
+})

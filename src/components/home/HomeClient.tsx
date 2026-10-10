@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { SearchBar } from "@/components/search/SearchBar"
 import { SearchResults } from "@/components/search/SearchResults"
 import { ArtistProfile } from "@/components/artist/ArtistProfile"
@@ -9,6 +9,7 @@ import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import { Header } from "@/components/common/Header"
 import { sparqlService, type ArtistInfo } from "@/services/sparqlService"
 import { PROVIDERS, isProviderId, type ProviderId } from "@/services/providers"
+import { SOURCE_HOMEPAGES, SOURCE_LABELS } from "@/services/sources"
 import type { SearchFilters } from "@/services/sparqlTypes"
 import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
 
@@ -17,48 +18,57 @@ interface HomeClientProps {
   locale: Locale
 }
 
+/** Sources credited in the footer when the multi-source mode is active. */
+const AUTO_SOURCES = ["wikidata", "wikipedia", "dbpedia", "musicbrainz", "discogs"] as const
+
 export function HomeClient({ dict, locale }: HomeClientProps) {
   const [searchResults, setSearchResults] = useState<ArtistInfo[]>([])
   const [selectedArtist, setSelectedArtist] = useState<ArtistInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [provider, setProvider] = useState<ProviderId>("wikidata")
+  const [provider, setProvider] = useState<ProviderId>("auto")
 
-  function handleProviderChange(value: string) {
-    if (!isProviderId(value) || value === provider) return
-    setProvider(value)
-    setSelectedArtist(null)
-    setSearchResults([])
-    setSearchTerm("")
-  }
-
-  const handleSearch = async (term: string, filters: SearchFilters) => {
-    if (!term.trim() && !Object.values(filters).some(Boolean)) return
-
-    setIsLoading(true)
-    setSearchTerm(term)
-    setSelectedArtist(null)
-
-    try {
-      const results = await sparqlService.searchArtist(term, filters, provider, locale)
-      setSearchResults(results)
-    } catch (error) {
-      console.error("Error searching:", error)
+  const handleProviderChange = useCallback((value: string) => {
+    if (!isProviderId(value)) return
+    setProvider((current) => {
+      if (value === current) return current
+      setSelectedArtist(null)
       setSearchResults([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      setSearchTerm("")
+      return value
+    })
+  }, [])
 
-  const handleArtistSelect = (artist: ArtistInfo) => {
+  const handleSearch = useCallback(
+    async (term: string, filters: SearchFilters) => {
+      if (!term.trim() && !Object.values(filters).some(Boolean)) return
+
+      setIsLoading(true)
+      setSearchTerm(term)
+      setSelectedArtist(null)
+
+      try {
+        const results = await sparqlService.searchArtist(term, filters, provider, locale)
+        setSearchResults(results)
+      } catch (error) {
+        console.error("Error searching:", error)
+        setSearchResults([])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [provider, locale]
+  )
+
+  const handleArtistSelect = useCallback((artist: ArtistInfo) => {
     setSelectedArtist(artist)
     window.scrollTo({ top: 0 })
-  }
+  }, [])
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setSelectedArtist(null)
     window.scrollTo({ top: 0 })
-  }
+  }, [])
 
   const providerInfo = PROVIDERS[provider]
 
@@ -117,14 +127,32 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
       <footer className='border-t border-border py-8 text-center text-xs text-muted'>
         <p>
           {dict.home.providedBy}{" "}
-          <a
-            href={providerInfo.homepage}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='link text-accent'
-          >
-            {providerInfo.label}
-          </a>
+          {provider === "auto" ? (
+            <span>
+              {AUTO_SOURCES.map((source, index) => (
+                <span key={source}>
+                  {index > 0 && " · "}
+                  <a
+                    href={SOURCE_HOMEPAGES[source]}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='link text-accent'
+                  >
+                    {SOURCE_LABELS[source]}
+                  </a>
+                </span>
+              ))}
+            </span>
+          ) : (
+            <a
+              href={providerInfo.homepage}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='link text-accent'
+            >
+              {providerInfo.label}
+            </a>
+          )}
         </p>
         <p className='mt-1'>{dict.home.footerText}</p>
       </footer>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useTransition } from "react"
 import {
   type ArtistInfo,
   type AlbumInfo,
@@ -34,6 +34,7 @@ import { CollaborationsTab } from "./tabs/CollaborationsTab"
 // ── Static config hoisted outside component (no recreation on render) ──────
 
 type TabType = "overview" | "discography" | "influences" | "collaborations"
+type SectionStatus = "loading" | "ready"
 
 const TAB_IDS: TabType[] = ["overview", "discography", "influences", "collaborations"]
 
@@ -89,8 +90,15 @@ export function ArtistProfile({
   const [influences, setInfluences] = useState<ArtistInfo[]>([])
   const [collaborations, setCollaborations] = useState<CollaborationInfo[]>([])
   const [enrichment, setEnrichment] = useState<ArtistEnrichmentResult>({})
-  const [isLoading, setIsLoading] = useState(true)
+
+  // Each section streams in independently: a slow source never blocks the rest.
+  const [discographyStatus, setDiscographyStatus] = useState<SectionStatus>("loading")
+  const [influencesStatus, setInfluencesStatus] = useState<SectionStatus>("loading")
+  const [collaborationsStatus, setCollaborationsStatus] = useState<SectionStatus>("loading")
+  const [enrichmentStatus, setEnrichmentStatus] = useState<SectionStatus>("loading")
+
   const [activeTab, setActiveTab] = useState<TabType>("overview")
+  const [isPending, startTransition] = useTransition()
   const [imageError, setImageError] = useState(false)
   const [detailSource, setDetailSource] = useState<"endpoint" | "musicbrainz">(
     "endpoint"
@@ -99,63 +107,83 @@ export function ArtistProfile({
   useEffect(() => {
     let cancelled = false
 
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        // Bio/members/genres arrive independently: never block the tabs on them.
-        const enrichmentPromise = sparqlService
-          .getArtistEnrichment(artist.id, provider, locale, { mbid: artist.mbid })
-          .catch(() => ({}) as ArtistEnrichmentResult)
+    // Reset previous artist data so a failed section never shows stale rows.
+    setDiscography([])
+    setInfluences([])
+    setCollaborations([])
+    setEnrichment({})
+    setDiscographyStatus("loading")
+    setInfluencesStatus("loading")
+    setCollaborationsStatus("loading")
+    setEnrichmentStatus("loading")
 
-        if (detailSource === "musicbrainz" && artist.mbid) {
-          const [mbDiscography, enrichmentData] = await Promise.all([
-            sparqlService.getArtistDiscography(
-              artist.id,
-              { mbid: artist.mbid, source: "musicbrainz" },
-              provider,
-              locale
-            ),
-            enrichmentPromise,
-          ])
-          if (!cancelled) {
-            setDiscography(mbDiscography)
-            setInfluences([])
-            setCollaborations([])
-            setEnrichment(enrichmentData)
-          }
-        } else {
-          const [discographyData, influencesData, collaborationsData, enrichmentData] =
-            await Promise.all([
-              sparqlService.getArtistDiscography(
-                artist.id,
-                {
-                  mbid: artist.mbid,
-                  discogsId: artist.externalIds?.discogs,
-                  name: artist.name,
-                },
-                provider,
-                locale
-              ),
-              sparqlService.getArtistInfluences(artist.id, provider, locale, artist.mbid),
-              sparqlService.getCollaborations(artist.id, provider, locale, artist.mbid),
-              enrichmentPromise,
-            ])
-          if (!cancelled) {
-            setDiscography(discographyData)
-            setInfluences(influencesData)
-            setCollaborations(collaborationsData)
-            setEnrichment(enrichmentData)
-          }
-        }
-      } catch {
-        // Data load failed — tabs will show empty states
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
+    const settle = <T,>(
+      promise: Promise<T>,
+      apply: (value: T) => void,
+      markReady: () => void
+    ) => {
+      promise
+        .then((value) => {
+          if (cancelled) return
+          apply(value)
+          markReady()
+        })
+        .catch(() => {
+          if (!cancelled) markReady()
+        })
     }
 
-    loadData()
-    return () => { cancelled = true }
+    settle(
+      sparqlService.getArtistEnrichment(artist.id, provider, locale, {
+        mbid: artist.mbid,
+      }),
+      setEnrichment,
+      () => setEnrichmentStatus("ready")
+    )
+
+    if (detailSource === "musicbrainz" && artist.mbid) {
+      setInfluencesStatus("ready")
+      setCollaborationsStatus("ready")
+      settle(
+        sparqlService.getArtistDiscography(
+          artist.id,
+          { mbid: artist.mbid, source: "musicbrainz" },
+          provider,
+          locale
+        ),
+        setDiscography,
+        () => setDiscographyStatus("ready")
+      )
+    } else {
+      settle(
+        sparqlService.getArtistDiscography(
+          artist.id,
+          {
+            mbid: artist.mbid,
+            discogsId: artist.externalIds?.discogs,
+            name: artist.name,
+          },
+          provider,
+          locale
+        ),
+        setDiscography,
+        () => setDiscographyStatus("ready")
+      )
+      settle(
+        sparqlService.getArtistInfluences(artist.id, provider, locale, artist.mbid),
+        setInfluences,
+        () => setInfluencesStatus("ready")
+      )
+      settle(
+        sparqlService.getCollaborations(artist.id, provider, locale, artist.mbid),
+        setCollaborations,
+        () => setCollaborationsStatus("ready")
+      )
+    }
+
+    return () => {
+      cancelled = true
+    }
   }, [
     artist.id,
     artist.mbid,
@@ -177,7 +205,7 @@ export function ArtistProfile({
     [artist, discography, influences, collaborations]
   )
 
-  // Wikidata genres ∪ MusicBrainz genres/tags (case-insensitive dedupe).
+  // Wikidata genres ∪ MusicBrainz genres (case-insensitive dedupe).
   const genres = useMemo(() => {
     const seen = new Set<string>()
     const list: string[] = []
@@ -207,6 +235,18 @@ export function ArtistProfile({
       ? [{ value: "musicbrainz", label: "MusicBrainz" }]
       : []),
   ]
+
+  const activeStatus: SectionStatus =
+    activeTab === "overview"
+      ? enrichmentStatus
+      : activeTab === "discography"
+        ? discographyStatus
+        : activeTab === "influences"
+          ? influencesStatus
+          : collaborationsStatus
+
+  const heroStat = (status: SectionStatus, value: number) =>
+    status === "ready" ? value : "—"
 
   return (
     <div className='mx-auto max-w-6xl'>
@@ -293,18 +333,20 @@ export function ArtistProfile({
               </>
             )}
 
-            {!isLoading && (
-              <>
-                <dt className={metaLabelClass}>{stripColon(dict.artist.albums)}</dt>
-                <dd className='font-bold'>{processedData.statistics.totalAlbums}</dd>
+            <dt className={metaLabelClass}>{stripColon(dict.artist.albums)}</dt>
+            <dd className='font-bold'>
+              {heroStat(discographyStatus, processedData.statistics.totalAlbums)}
+            </dd>
 
-                <dt className={metaLabelClass}>{stripColon(dict.artist.influences)}</dt>
-                <dd className='font-bold'>{processedData.statistics.totalInfluences}</dd>
+            <dt className={metaLabelClass}>{stripColon(dict.artist.influences)}</dt>
+            <dd className='font-bold'>
+              {heroStat(influencesStatus, processedData.statistics.totalInfluences)}
+            </dd>
 
-                <dt className={metaLabelClass}>{stripColon(dict.artist.collaborations)}</dt>
-                <dd className='font-bold'>{processedData.statistics.totalCollaborations}</dd>
-              </>
-            )}
+            <dt className={metaLabelClass}>{stripColon(dict.artist.collaborations)}</dt>
+            <dd className='font-bold'>
+              {heroStat(collaborationsStatus, processedData.statistics.totalCollaborations)}
+            </dd>
           </dl>
 
           {genres.length > 0 && (
@@ -364,7 +406,7 @@ export function ArtistProfile({
                 type='button'
                 role='tab'
                 aria-selected={isActive}
-                onClick={() => setActiveTab(id)}
+                onClick={() => startTransition(() => setActiveTab(id))}
                 className={`inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-bold transition-colors ${
                   isActive
                     ? "border-accent text-foreground"
@@ -379,21 +421,31 @@ export function ArtistProfile({
         </div>
       </div>
 
-      {/* Tab content */}
-      <div key={activeTab} className='animate-rise'>
-        {isLoading ? (
+      {/* Tab content — each section renders as soon as its data arrives */}
+      <div
+        key={activeTab}
+        aria-busy={isPending}
+        className={`animate-rise transition-opacity ${isPending ? "opacity-60" : ""}`}
+      >
+        {activeTab === "overview" ? (
+          <OverviewTab
+            artist={artist}
+            processedData={processedData}
+            bio={enrichment.enrichment?.bio}
+            sources={enrichment.sources}
+            enrichmentStatus={enrichmentStatus}
+            statsStatus={{
+              discography: discographyStatus,
+              influences: influencesStatus,
+              collaborations: collaborationsStatus,
+            }}
+            locale={locale}
+            dict={dict}
+          />
+        ) : activeStatus === "loading" ? (
           <TabSkeleton />
         ) : (
           <>
-            {activeTab === "overview" && (
-              <OverviewTab
-                artist={artist}
-                processedData={processedData}
-                bio={enrichment.enrichment?.bio}
-                sources={enrichment.sources}
-                dict={dict}
-              />
-            )}
             {activeTab === "discography" && (
               <DiscographyTab discography={processedData.discography} dict={dict} />
             )}

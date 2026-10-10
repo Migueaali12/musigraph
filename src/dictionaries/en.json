@@ -84,6 +84,19 @@
     "noCollaborationsDesc": "We found no registered collaborations for this artist in Wikidata.",
     "with": "With {artist}"
   },
+  "data": {
+    "title": "How the data is built",
+    "intro": "MusiGraph combines open linked sources: identity and core data from Wikidata, biographies from Wikipedia, discography and relations from MusicBrainz, releases and labels from Discogs, and Spanish summaries from DBpedia. Auto mode merges them and shows the source of every piece of data.",
+    "sources": {
+      "wikidata": "Artist identity, core data, partial discography and external identifiers.",
+      "wikipedia": "Biographies in the UI language, with attribution.",
+      "dbpedia": "Spanish summaries as a biography fallback.",
+      "musicbrainz": "Discography, genres and relations between artists.",
+      "discogs": "Releases, labels and formats (requires an API token)."
+    },
+    "pending": "The full documentation (flow diagram, per-API limits and licenses) arrives in Phase 4.",
+    "back": "Back to the explorer"
+  },
   "header": {
     "dataSource": "Data source:",
     "endpoint": "Endpoint:",

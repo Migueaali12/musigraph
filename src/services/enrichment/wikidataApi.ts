@@ -28,6 +28,9 @@ interface WbEntity {
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000
 const cache = new TtlCache<ResolvedArtistData>(500, CACHE_TTL_MS)
+// In-flight coalescing: the profile fans out to several actions in parallel,
+// so a cold cache must not trigger one wbgetentities call per action.
+const inflight = new Map<string, Promise<ResolvedArtistData>>()
 const USER_AGENT = "MusiGraph/1.0 (https://musigraph.app)"
 
 const ID_PROPERTIES: Record<keyof Pick<ResolvedArtistData, "mbid" | "discogsId" | "spotifyId" | "lastfmId" | "allmusicId">, string> = {
@@ -49,6 +52,19 @@ export async function resolveArtistData(qid: string, lang: Lang = "es"): Promise
   const cached = cache.get(cacheKey)
   if (cached) return cached
 
+  const pending = inflight.get(cacheKey)
+  if (pending) return pending
+
+  const promise = fetchResolvedArtistData(qid, lang, cacheKey)
+  inflight.set(cacheKey, promise)
+  return promise
+}
+
+async function fetchResolvedArtistData(
+  qid: string,
+  lang: Lang,
+  cacheKey: string
+): Promise<ResolvedArtistData> {
   const url = new URL("https://www.wikidata.org/w/api.php")
   url.searchParams.set("action", "wbgetentities")
   url.searchParams.set("ids", qid)
@@ -99,5 +115,6 @@ export async function resolveArtistData(qid: string, lang: Lang = "es"): Promise
     throw err
   } finally {
     clearTimeout(timeoutId)
+    inflight.delete(cacheKey)
   }
 }

@@ -64,8 +64,8 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   },
 }
 
-/** Providers offered in the UI selector. `auto` joins the list in the enrichment phase. */
-export const SELECTABLE_PROVIDERS: ProviderId[] = ["wikidata", "qlever", "dbpedia"]
+/** Providers offered in the UI selector. `auto` is the default multi-source mode. */
+export const SELECTABLE_PROVIDERS: ProviderId[] = ["auto", "wikidata", "qlever", "dbpedia"]
 
 export function isProviderId(value: unknown): value is ProviderId {
   return (

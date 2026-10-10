@@ -32,3 +32,8 @@ export const SOURCE_HOMEPAGES: Record<SourceId, string> = {
   musicbrainz: "https://musicbrainz.org",
   discogs: "https://www.discogs.com",
 }
+
+/** Anchor to the methodology page section for a source. */
+export function sourceAnchorHref(locale: string, source: SourceId): string {
+  return `/${locale}/data#${source}`
+}

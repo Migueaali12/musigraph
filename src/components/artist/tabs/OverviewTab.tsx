@@ -1,16 +1,25 @@
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { ProcessedArtistData } from "@/services/dataProcessor"
 import type { ArtistBio } from "@/services/sparqlTypes"
-import type { SourceStatusMap } from "@/services/sources"
+import { sourceAnchorHref, type SourceId, type SourceStatusMap } from "@/services/sources"
 import { SourceBadge } from "@/components/common/SourceBadge"
 import { extractYear } from "@/utils/date"
-import type { Dictionary } from "@/dictionaries/getDictionary"
+import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
+
+type SectionStatus = "loading" | "ready"
 
 interface OverviewTabProps {
   artist: ArtistInfo
   processedData: ProcessedArtistData
   bio?: ArtistBio
   sources?: SourceStatusMap
+  enrichmentStatus: SectionStatus
+  statsStatus: {
+    discography: SectionStatus
+    influences: SectionStatus
+    collaborations: SectionStatus
+  }
+  locale: Locale
   dict: Dictionary
 }
 
@@ -19,6 +28,9 @@ export function OverviewTab({
   processedData,
   bio,
   sources,
+  enrichmentStatus,
+  statsStatus,
+  locale,
   dict,
 }: OverviewTabProps) {
   const countryPart = artist.country
@@ -40,20 +52,23 @@ export function OverviewTab({
   const stats = [
     {
       value: processedData.statistics.totalAlbums,
+      status: statsStatus.discography,
       label: dict.artist.statAlbums,
     },
     {
       value: processedData.statistics.totalInfluences,
+      status: statsStatus.influences,
       label: dict.artist.statInfluences,
     },
     {
       value: processedData.statistics.totalCollaborations,
+      status: statsStatus.collaborations,
       label: dict.artist.statCollaborations,
     },
   ]
 
   const provenance = sources
-    ? (Object.entries(sources) as [keyof SourceStatusMap, NonNullable<SourceStatusMap[keyof SourceStatusMap]>][])
+    ? (Object.entries(sources) as [SourceId, NonNullable<SourceStatusMap[SourceId]>][])
     : []
 
   return (
@@ -66,7 +81,13 @@ export function OverviewTab({
           .replace("{genres}", genresPart)}
       </p>
 
-      {bio && (
+      {enrichmentStatus === "loading" ? (
+        <div aria-hidden='true' className='max-w-prose space-y-2'>
+          <div className='h-4 w-full animate-pulse rounded-xs bg-surface-elevated' />
+          <div className='h-4 w-11/12 animate-pulse rounded-xs bg-surface-elevated' />
+          <div className='h-4 w-2/3 animate-pulse rounded-xs bg-surface-elevated' />
+        </div>
+      ) : bio ? (
         <section>
           <p className='max-w-prose text-[15px] leading-relaxed'>{bio.text}</p>
           <p className='mt-2 text-xs text-muted'>
@@ -95,16 +116,21 @@ export function OverviewTab({
             )}
           </p>
         </section>
-      )}
+      ) : null}
 
-      {provenance.length > 0 && (
+      {enrichmentStatus === "ready" && provenance.length > 0 && (
         <section>
           <h2 className='text-[10px] font-bold uppercase tracking-[0.14em] text-muted'>
             {dict.artist.dataSources}
           </h2>
           <div className='mt-2 flex flex-wrap gap-1.5'>
             {provenance.map(([source, status]) => (
-              <SourceBadge key={source} source={source} status={status} />
+              <SourceBadge
+                key={source}
+                source={source}
+                status={status}
+                href={sourceAnchorHref(locale, source)}
+              />
             ))}
           </div>
         </section>
@@ -113,7 +139,9 @@ export function OverviewTab({
       <ul className='grid grid-cols-3 divide-x divide-border border-y border-border'>
         {stats.map((stat) => (
           <li key={stat.label} className='px-2 py-6 text-center'>
-            <p className='text-2xl font-bold sm:text-3xl'>{stat.value}</p>
+            <p className='text-2xl font-bold sm:text-3xl'>
+              {stat.status === "ready" ? stat.value : "—"}
+            </p>
             <p className='mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted sm:text-[11px]'>
               {stat.label}
             </p>

@@ -12,8 +12,8 @@
 | **0** | Cimientos: proveedores, idioma (locale), validación, caché, fechas, limpieza | ✅ Completada |
 | **1** | Optimización de consultas Wikidata + DBpedia funcional | ✅ Completada |
 | **2** | Enriquecimiento multi-fuente + modo **Auto** + Discogs | ✅ Completada (2026-10-09) |
-| **3** | UI y rendimiento (selector Auto, badges de fuente, render progresivo) | ⏳ Pendiente |
-| **4** | Página de metodología `/[lang]/data` | ⏳ Pendiente |
+| **3** | UI y rendimiento (selector Auto, badges de fuente, render progresivo) | ✅ Completada (2026-10-09) |
+| **4** | Página de metodología `/[lang]/data` | ⏳ Pendiente (puente mínimo ya creado) |
 | **5** | Preparación WDQS v2 (`query-next.wikidata.org`) y monitoreo | ⏳ Pendiente |
 
 **Commits:**
@@ -252,13 +252,21 @@ Entregado:
 
 ---
 
-## 7. Fase 3 — UI y rendimiento ⏳
+## 7. Fase 3 — UI y rendimiento ✅
 
 - Selector "Fuente de datos" con **Auto** como opción por defecto; opciones explícitas (Wikidata / QLever / DBpedia) se mantienen para comparar y depurar.
 - Badges de provenance en resultados y perfil; enlaces ancla a `/[lang]/data`.
 - Render progresivo por sección (bio/discografía/relaciones llegan cuando están listas, sin bloquear el perfil).
 - `useTransition` para cambio de tabs, `content-visibility` en listas largas, memoización de filas (guías Vercel).
 - Mantener el sistema de diseño: Space Mono, dot grid, chips 2px, hairlines, sin gradientes/sombras; `prefers-reduced-motion`.
+
+Entregado (2026-10-09):
+- `SELECTABLE_PROVIDERS = [auto, wikidata, qlever, dbpedia]`; `HomeClient` arranca en `auto` y el footer acredita las 5 fuentes con enlaces.
+- Badges de fuente por fila en resultados de búsqueda, discografía e influencias; el strip de procedencia del perfil enlaza a `/[lang]/data#<fuente>`.
+- Carga independiente por sección (`settle()` por promesa): stats con "—" hasta que su sección está lista, skeleton solo en la tab activa, sin bloquear el perfil.
+- `useTransition` en el cambio de tab (con `aria-busy`), `content-visibility: auto` (`.list-long` / `.list-long-cards`) y `memo()` en filas/tarjetas/grupos.
+- Página `/[lang]/data` puente: título, intro, 5 secciones ancla y nota de "Fase 4" (la metodología completa — diagrama, límites y licencias — sigue siendo el alcance de Fase 4).
+- Coalescing in-flight en `resolveArtistData` (el perfil lanza 4 acciones en paralelo; una sola llamada a wbgetentities en frío).
 
 ## 8. Fase 4 — Página de metodología `/[lang]/data` ⏳
 
@@ -313,15 +321,16 @@ Acciones actuales: `searchArtist`, `getArtistDiscography`, `getArtistInfluences`
 | DBpedia sin álbumes/colaboraciones de muchos artistas | Wikidata/MusicBrainz son las fuentes reales; DBpedia solo enriquece |
 | MusicBrainz 1 req/s | Cola + caché 24 h + timeout 8 s; nunca path crítico |
 | qlever.dev es un endpoint comunitario | Usar como ensayo; oficial v2 llega nov 2026 |
-| `auto` aún no visible | Backend completo (Fase 2); entra al selector en Fase 3 |
+| `auto` ya es el modo por defecto | Opciones explícitas se mantienen para comparar/depurar; failover WD→QLever con presupuesto de 12 s/8 s |
 | Fix `0e7c880` sin pushear | `git push` cuando el usuario lo indique |
 
 ## 12. Estado de git
 
 ```
 feat/data-enrichment (actual, upstream configurado)
-  ├─ Fase 2 completa en esta rama (ver §6.7/§6.8)
-  ├─ 0e7c880 fix(discography): dedupe releases to avoid duplicate React keys  [sin pushear]
+  ├─ Fase 3 completa en working tree (ver §7)
+  ├─ 03f84a4 feat(enrichment): multi-source auto mode with provenance      [pusheado]
+  ├─ 0e7c880 fix(discography): dedupe releases to avoid duplicate React keys  [pusheado]
   └─ 27acad8 feat: add featured artist IDs and remove unused SPARQL queries   [pusheado]
 
 main = 596595f (restaurado, force-push a origin)
