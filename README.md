@@ -103,6 +103,17 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Environment Variables
+
+Create a `.env` file at the project root (all variables are optional):
+
+```bash
+# Discogs personal access token. Without it the Discogs enrichment source
+# disables itself and the rest of the app keeps working.
+# https://www.discogs.com/settings/developers
+DISCOGS_TOKEN=your_personal_access_token
+```
+
 ### Production Build
 
 ```bash

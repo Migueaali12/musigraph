@@ -7,27 +7,28 @@ import { Globe } from "lucide-react"
 import { ThemeToggle } from "./ThemeToggle"
 import { Select, type SelectOption } from "./Select"
 import { GitHub } from "../Github"
+import { PROVIDERS, SELECTABLE_PROVIDERS, type ProviderId } from "@/services/providers"
 import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
 
 interface HeaderProps {
-  endpoint: string
-  onEndpointChange: (value: string) => void
+  provider: ProviderId
+  onProviderChange: (value: string) => void
   dict: Dictionary
   locale: Locale
 }
 
-const SPARQL_ENDPOINTS: SelectOption[] = [
-  { value: "https://query.wikidata.org/sparql", label: "Wikidata" },
-  { value: "https://dbpedia.org/sparql", label: "DBpedia" },
-]
-
 export function Header({
-  endpoint,
-  onEndpointChange,
+  provider,
+  onProviderChange,
   dict,
   locale,
 }: HeaderProps) {
   const pathname = usePathname()
+
+  const providerOptions: SelectOption[] = SELECTABLE_PROVIDERS.map((id) => ({
+    value: id,
+    label: PROVIDERS[id].label,
+  }))
 
   const languageOptions: SelectOption[] = [
     { value: "en", label: "English", display: dict.header.en },
@@ -37,6 +38,9 @@ export function Header({
   const handleLanguageChange = (newLocale: string) => {
     if (newLocale === locale) return
     const pathWithoutLocale = pathname.replace(/^\/(en|es)/, "") || "/"
+    // Full reload on purpose: it resets client state (search results, selected
+    // artist) so the whole UI switches language consistently.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/${newLocale}${pathWithoutLocale}`
   }
 
@@ -59,17 +63,17 @@ export function Header({
 
         <div className='flex items-center gap-1.5 sm:gap-2'>
           <label
-            htmlFor='endpoint-select'
+            htmlFor='provider-select'
             className='hidden text-xs text-muted lg:block'
           >
-            {dict.header.endpoint}
+            {dict.header.dataSource}
           </label>
           <Select
-            id='endpoint-select'
-            ariaLabel={dict.header.endpoint}
-            value={endpoint}
-            onChange={onEndpointChange}
-            options={SPARQL_ENDPOINTS}
+            id='provider-select'
+            ariaLabel={dict.header.dataSource}
+            value={provider}
+            onChange={onProviderChange}
+            options={providerOptions}
             align='right'
           />
 

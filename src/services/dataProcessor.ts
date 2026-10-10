@@ -1,4 +1,5 @@
 import type { ArtistInfo, AlbumInfo, CollaborationInfo } from "./sparqlService"
+import { extractYear } from "@/utils/date"
 
 interface ProcessedArtistData {
   basic: ArtistInfo
@@ -11,6 +12,13 @@ interface ProcessedArtistData {
     totalCollaborations: number
     activeYears: number
   }
+}
+
+interface CollaborationGroup {
+  collaboratorId: string
+  collaborator: string
+  works: CollaborationInfo[]
+  count: number
 }
 
 interface NetworkNode {
@@ -65,16 +73,16 @@ class DataProcessor {
     influences: ArtistInfo[],
     collaborations: CollaborationInfo[]
   ) {
-    const birthYear = artist.birthDate
-      ? new Date(artist.birthDate).getFullYear()
-      : null
+    const birthYear = extractYear(artist.birthDate)
     const currentYear = new Date().getFullYear()
     const activeYears = birthYear ? currentYear - birthYear : 0
 
     return {
       totalAlbums: discography.length,
       totalInfluences: influences.length,
-      totalCollaborations: collaborations.length,
+      totalCollaborations: new Set(
+        collaborations.map((collab) => collab.collaboratorId || collab.collaborator)
+      ).size,
       activeYears: Math.max(0, activeYears),
     }
   }
@@ -90,25 +98,59 @@ class DataProcessor {
     }
 
     return Array.from(seen.values()).sort((a, b) => {
-      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0
-      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0
+      const dateA = extractYear(a.releaseDate) ?? 0
+      const dateB = extractYear(b.releaseDate) ?? 0
       return dateB - dateA // Most recent first
     })
   }
 
   private sortArtistsByInfluence(artists: ArtistInfo[]): ArtistInfo[] {
-    // Sort by number of genres (more diverse = more influential)
-    return artists.sort((a, b) => b.genres.length - a.genres.length)
+    // Most popular (Wikidata sitelinks) first, genre diversity as tie-breaker
+    return [...artists].sort(
+      (a, b) =>
+        (b.popularity ?? 0) - (a.popularity ?? 0) || b.genres.length - a.genres.length
+    )
   }
 
   private sortCollaborationsByDate(
     collaborations: CollaborationInfo[]
   ): CollaborationInfo[] {
-    return collaborations.sort((a, b) => {
-      const dateA = a.releaseDate ? new Date(a.releaseDate).getTime() : 0
-      const dateB = b.releaseDate ? new Date(b.releaseDate).getTime() : 0
+    // Copy before sorting: the input array belongs to React state.
+    return [...collaborations].sort((a, b) => {
+      const dateA = extractYear(a.releaseDate) ?? 0
+      const dateB = extractYear(b.releaseDate) ?? 0
       return dateB - dateA // Most recent first
     })
+  }
+
+  /**
+   * Group collaborations by collaborator, most frequent first.
+   * Used by the collaborations tab to show a collaborator-centric view.
+   */
+  groupCollaborations(collaborations: CollaborationInfo[]): CollaborationGroup[] {
+    const groups = new Map<string, CollaborationGroup>()
+
+    for (const collab of collaborations) {
+      const key = collab.collaboratorId || collab.collaborator
+      const group = groups.get(key) ?? {
+        collaboratorId: key,
+        collaborator: collab.collaborator,
+        works: [],
+        count: 0,
+      }
+      group.works.push(collab)
+      group.count++
+      groups.set(key, group)
+    }
+
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        works: this.sortCollaborationsByDate(group.works),
+      }))
+      .sort(
+        (a, b) => b.count - a.count || a.collaborator.localeCompare(b.collaborator)
+      )
   }
 
   buildInfluenceNetwork(
@@ -162,8 +204,8 @@ class DataProcessor {
     const collaboratorMap = new Map<string, { name: string; count: number }>()
 
     collaborations.forEach((collab) => {
-      const collaboratorId = collab.artist2
-      const collaboratorName = collab.artist2
+      const collaboratorId = collab.collaboratorId || collab.collaborator
+      const collaboratorName = collab.collaborator
 
       if (!collaboratorMap.has(collaboratorId)) {
         collaboratorMap.set(collaboratorId, {
@@ -206,8 +248,8 @@ class DataProcessor {
     const timeline = new Map<number, { count: number; genres: Set<string> }>()
 
     albums.forEach((album) => {
-      if (album.releaseDate) {
-        const year = new Date(album.releaseDate).getFullYear()
+      const year = extractYear(album.releaseDate)
+      if (year !== null) {
         const current = timeline.get(year) || { count: 0, genres: new Set() }
 
         current.count++
@@ -333,4 +375,10 @@ class DataProcessor {
 }
 
 export const dataProcessor = new DataProcessor()
-export type { ProcessedArtistData, NetworkData, NetworkNode, NetworkEdge }
+export type {
+  ProcessedArtistData,
+  NetworkData,
+  NetworkNode,
+  NetworkEdge,
+  CollaborationGroup,
+}

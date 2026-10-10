@@ -88,6 +88,20 @@ export const QUICK_SEARCH_TERMS = [
   "Michael Jackson",
 ] as const
 
+// Curated fallback list shown before the user searches (QIDs verified via wbsearchentities)
+export const FEATURED_ARTIST_IDS = [
+  "Q1299", // The Beatles
+  "Q2306", // Pink Floyd
+  "Q2331", // Led Zeppelin
+  "Q11036", // The Rolling Stones
+  "Q392", // Bob Dylan
+  "Q44190", // Radiohead
+  "Q11649", // Nirvana
+  "Q5383", // David Bowie
+  "Q42775", // Johnny Cash
+  "Q93341", // Miles Davis
+] as const
+
 // API Configuration
 export const API_CONFIG = {
   WIKIDATA_ENDPOINT: "https://query.wikidata.org/sparql",

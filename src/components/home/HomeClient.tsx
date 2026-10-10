@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
+import Link from "next/link"
 import { SearchBar } from "@/components/search/SearchBar"
 import { SearchResults } from "@/components/search/SearchResults"
 import { ArtistProfile } from "@/components/artist/ArtistProfile"
@@ -8,72 +9,87 @@ import { AppStats } from "@/components/common/AppStats"
 import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import { Header } from "@/components/common/Header"
 import { sparqlService, type ArtistInfo } from "@/services/sparqlService"
+import { PROVIDERS, isProviderId, type ProviderId } from "@/services/providers"
+import { SOURCE_HOMEPAGES, SOURCE_LABELS } from "@/services/sources"
+import type { SearchFilters } from "@/services/sparqlTypes"
 import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
-
-interface SearchFilters {
-  genre?: string
-  decade?: string
-  country?: string
-  artistType?: "solo" | "band" | "composer"
-}
 
 interface HomeClientProps {
   dict: Dictionary
   locale: Locale
 }
 
+/** Sources credited in the footer when the multi-source mode is active. */
+const AUTO_SOURCES = ["wikidata", "wikipedia", "dbpedia", "musicbrainz", "discogs"] as const
+
 export function HomeClient({ dict, locale }: HomeClientProps) {
   const [searchResults, setSearchResults] = useState<ArtistInfo[]>([])
   const [selectedArtist, setSelectedArtist] = useState<ArtistInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [endpoint, setEndpoint] = useState("https://query.wikidata.org/sparql")
+  const [provider, setProvider] = useState<ProviderId>("auto")
 
-  function handleEndpointChange(value: string) {
-    setEndpoint(value)
-    setSelectedArtist(null)
-    setSearchResults([])
-    setSearchTerm("")
-  }
-
-  const handleSearch = async (term: string, filters: SearchFilters) => {
-    if (!term.trim() && !Object.values(filters).some(Boolean)) return
-
-    setIsLoading(true)
-    setSearchTerm(term)
-    setSelectedArtist(null)
-
-    try {
-      const results = await sparqlService.searchArtist(term, filters, endpoint)
-      setSearchResults(results)
-    } catch (error) {
-      console.error("Error searching:", error)
+  const handleProviderChange = useCallback((value: string) => {
+    if (!isProviderId(value)) return
+    setProvider((current) => {
+      if (value === current) return current
+      setSelectedArtist(null)
       setSearchResults([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      setSearchTerm("")
+      return value
+    })
+  }, [])
 
-  const handleArtistSelect = (artist: ArtistInfo) => {
+  const handleSearch = useCallback(
+    async (term: string, filters: SearchFilters) => {
+      if (!term.trim() && !Object.values(filters).some(Boolean)) return
+
+      setIsLoading(true)
+      setSearchTerm(term)
+      setSelectedArtist(null)
+
+      try {
+        const results = await sparqlService.searchArtist(term, filters, provider, locale)
+        setSearchResults(results)
+      } catch (error) {
+        console.error("Error searching:", error)
+        setSearchResults([])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [provider, locale]
+  )
+
+  const handleArtistSelect = useCallback((artist: ArtistInfo) => {
     setSelectedArtist(artist)
     window.scrollTo({ top: 0 })
-  }
+  }, [])
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setSelectedArtist(null)
     window.scrollTo({ top: 0 })
-  }
+  }, [])
+
+  const providerInfo = PROVIDERS[provider]
 
   return (
     <div className='min-h-screen text-foreground'>
-      <Header endpoint={endpoint} onEndpointChange={handleEndpointChange} dict={dict} locale={locale} />
+      <Header
+        provider={provider}
+        onProviderChange={handleProviderChange}
+        dict={dict}
+        locale={locale}
+      />
 
       {selectedArtist ? (
         <main className='mx-auto max-w-6xl px-4 py-10 sm:px-6'>
           <ArtistProfile
+            key={selectedArtist.id}
             artist={selectedArtist}
             onBack={handleBack}
-            endpoint={endpoint}
+            provider={provider}
+            locale={locale}
             dict={dict}
           />
         </main>
@@ -113,25 +129,37 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
       <footer className='border-t border-border py-8 text-center text-xs text-muted'>
         <p>
           {dict.home.providedBy}{" "}
-          {endpoint.includes("dbpedia") ? (
-            <a
-              href='https://dbpedia.org'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='link text-accent'
-            >
-              DBpedia
-            </a>
+          {provider === "auto" ? (
+            <span>
+              {AUTO_SOURCES.map((source, index) => (
+                <span key={source}>
+                  {index > 0 && " · "}
+                  <a
+                    href={SOURCE_HOMEPAGES[source]}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='link text-accent'
+                  >
+                    {SOURCE_LABELS[source]}
+                  </a>
+                </span>
+              ))}
+            </span>
           ) : (
             <a
-              href='https://wikidata.org'
+              href={providerInfo.homepage}
               target='_blank'
               rel='noopener noreferrer'
               className='link text-accent'
             >
-              Wikidata
+              {providerInfo.label}
             </a>
           )}
+        </p>
+        <p className='mt-1.5'>
+          <Link href={`/${locale}/data`} className='link text-accent'>
+            {dict.data.footerLink}
+          </Link>
         </p>
         <p className='mt-1'>{dict.home.footerText}</p>
       </footer>

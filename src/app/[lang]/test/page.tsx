@@ -8,13 +8,6 @@ import { queryBuilder } from "@/services/queryBuilder"
 import { dataProcessor } from "@/services/dataProcessor"
 import { Loading } from "@/components/common/Loading"
 import { ErrorBoundary } from "@/components/common/ErrorBoundary"
-import {
-  fetchDiscographyFromMusicBrainz,
-  fetchCollaborationsFromMusicBrainz,
-  fetchInfluencesFromMusicBrainz,
-  fetchDeepCollaborationsFromMusicBrainz,
-  fetchDeepInfluencesFromMusicBrainz,
-} from "@/services/musicbrainzService"
 
 interface TestResult {
   type: string
@@ -201,34 +194,20 @@ export default function TestPage() {
       }
     )
 
-    // Test 7: Discografía desde MusicBrainz helper
-    await runTest("MusicBrainz Discografía Helper", async () => {
+    // Test 7: Discografía desde MusicBrainz (vía API server-side)
+    await runTest("MusicBrainz Discografía (vía API)", async () => {
       const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchDiscographyFromMusicBrainz(mbid)
-    })
-
-    // Test 8: Colaboraciones desde MusicBrainz helper
-    await runTest("MusicBrainz Colaboraciones Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchCollaborationsFromMusicBrainz(mbid)
-    })
-
-    // Test 9: Influencias desde MusicBrainz helper
-    await runTest("MusicBrainz Influencias Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchInfluencesFromMusicBrainz(mbid)
-    })
-
-    // Test 10: Colaboraciones profundas desde MusicBrainz (releases)
-    await runTest("MusicBrainz Deep Colaboraciones Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchDeepCollaborationsFromMusicBrainz(mbid, 3)
-    })
-
-    // Test 11: Influencias profundas desde MusicBrainz (releases)
-    await runTest("MusicBrainz Deep Influencias Helper", async () => {
-      const mbid = "5b11f4ce-a62d-471e-81fc-a69a8278c7da"
-      return await fetchDeepInfluencesFromMusicBrainz(mbid, 3)
+      const res = await fetch("/api/sparql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "getArtistDiscography",
+          params: { artistId: "Q11649", mbid, source: "musicbrainz" },
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return data
     })
 
     setIsLoading(false)

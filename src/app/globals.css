@@ -238,6 +238,18 @@
     background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
     background-size: 24px 24px;
   }
+
+  /* ── Long-list rendering hints ────────────────────────── */
+  /* content-visibility skips off-screen rows (large discographies). */
+  .list-long > li {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 3.5rem;
+  }
+
+  .list-long-cards > li {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 9rem;
+  }
 }
 
 /* ── Artisanal motion ───────────────────────────────────── */
