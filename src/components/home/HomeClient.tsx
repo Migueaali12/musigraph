@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
+import Link from "next/link"
 import { SearchBar } from "@/components/search/SearchBar"
 import { SearchResults } from "@/components/search/SearchResults"
 import { ArtistProfile } from "@/components/artist/ArtistProfile"
@@ -154,6 +155,11 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
               {providerInfo.label}
             </a>
           )}
+        </p>
+        <p className='mt-1.5'>
+          <Link href={`/${locale}/data`} className='link text-accent'>
+            {dict.data.footerLink}
+          </Link>
         </p>
         <p className='mt-1'>{dict.home.footerText}</p>
       </footer>

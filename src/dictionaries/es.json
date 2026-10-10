@@ -85,17 +85,116 @@
     "with": "Con {artist}"
   },
   "data": {
+    "metaTitle": "Cómo se construyen los datos — MusiGraph",
+    "metaDescription": "Metodología de datos de MusiGraph: el modo Auto, la precedencia y deduplicación entre Wikidata, Wikipedia, DBpedia, MusicBrainz y Discogs, los límites de cada API y sus licencias.",
+    "eyebrow": "Metodología",
     "title": "Cómo se construyen los datos",
-    "intro": "MusiGraph combina fuentes abiertas y enlazadas: identidad y datos base desde Wikidata, biografías desde Wikipedia, discografía y relaciones desde MusicBrainz, lanzamientos y sellos desde Discogs, y resúmenes en español desde DBpedia. El modo Auto une todo y muestra la fuente de cada dato.",
-    "sources": {
-      "wikidata": "Identidad de artistas, datos base, discografía parcial e identificadores externos.",
-      "wikipedia": "Biografías en el idioma de la interfaz, con atribución.",
-      "dbpedia": "Resúmenes en español como respaldo de las biografías.",
-      "musicbrainz": "Discografía, géneros y relaciones entre artistas.",
-      "discogs": "Lanzamientos, sellos y formatos (requiere token de API)."
+    "intro": "MusiGraph consulta fuentes abiertas y enlazadas en tiempo real. El modo Auto es el predeterminado: usa Wikidata como núcleo (identidad, datos base e identificadores) con relevo automático a QLever, y enriquece el resultado con Wikipedia, DBpedia, MusicBrainz y Discogs. Cada dato conserva su origen y se marca con una insignia de fuente.",
+    "back": "Volver al explorador",
+    "footerLink": "Cómo se construyen los datos",
+    "flow": {
+      "title": "Flujo de datos en modo Auto",
+      "caption": "El núcleo de Wikidata es esencial y responde primero; las fuentes de enriquecimiento se consultan en paralelo, nunca bloquean el perfil y cada una informa su estado en la fusión final.",
+      "diagramTitle": "Flujo de datos de MusiGraph en modo Auto",
+      "diagramDesc": "La interfaz llama a /api/sparql, que valida y cachea la petición; el orquestador Auto consulta Wikidata con relevo a QLever y, en paralelo, a Wikipedia, DBpedia, MusicBrainz y Discogs; el resultado se fusiona con procedencia y alimenta las pestañas del perfil.",
+      "labels": {
+        "ui": "Interfaz",
+        "uiSub": "búsqueda · perfil",
+        "apiSub": "validación · caché · dispatch",
+        "autoSub": "orquestador · procedencia",
+        "coreSub": "núcleo · relevo: QLever",
+        "enrich": "Fuentes de enriquecimiento",
+        "enrichSub": "wikipedia · dbpedia es · musicbrainz · discogs",
+        "merge": "Fusión + procedencia",
+        "mergeSub": "clave P436 ↔ release-group",
+        "tabs": "Pestañas del perfil"
+      }
     },
-    "pending": "La documentación completa (diagrama de flujo, límites de cada API y licencias) llega en la Fase 4.",
-    "back": "Volver al explorador"
+    "autoRules": {
+      "title": "Reglas del modo Auto",
+      "intro": "El orquestador combina las fuentes campo a campo, deduplica las filas y conserva el origen de cada dato. Estas son las reglas que aplica.",
+      "caption": "Reglas de precedencia por campo en el modo Auto.",
+      "columns": { "field": "Campo", "order": "Orden de procedencia" },
+      "rows": [
+        { "field": "Nombre", "order": "Etiqueta de Wikidata en el idioma de la interfaz; si falta, etiqueta multilingüe de respaldo." },
+        { "field": "Biografía", "order": "Wikipedia en el idioma de la interfaz → DBpedia ES (solo con interfaz en español) → descripción corta de Wikidata." },
+        { "field": "Imagen", "order": "Imagen P18 de Wikidata, servida como miniatura; hoy no hay más respaldos." },
+        { "field": "Discografía", "order": "MusicBrainz → Wikidata → Discogs, con relleno de campos vacíos (fecha, sello, género y tipo)." },
+        { "field": "Géneros", "order": "Unión de Wikidata y los géneros curados de MusicBrainz, sin duplicados; los tags folclóricos se descartan." },
+        { "field": "Influencias", "order": "P737 y P1066 de Wikidata + relaciones reales de MusicBrainz (profesor, tributo), con su tipo." },
+        { "field": "Colaboraciones", "order": "Obras con varios intérpretes en Wikidata (P175) + relaciones de colaboración de MusicBrainz." },
+        { "field": "Sugerencias", "order": "La similitud de género se etiqueta como sugerencia; nunca se presenta como una influencia verificada." }
+      ],
+      "dedupeTitle": "Deduplicación",
+      "dedupe": "Las discografías se deduplican con dos claves: el identificador P436 de Wikidata ↔ release-group de MusicBrainz como clave fuerte y, en su defecto, título normalizado (sin acentos ni mayúsculas) más año.",
+      "statusesTitle": "Estados y procedencia",
+      "statuses": "Las insignias de procedencia muestran el resultado de cada fuente: ok, vacío, error, timeout u omitida. Las fuentes de enriquecimiento son prescindibles: si una cae, el perfil se muestra igual y solo se marca su estado."
+    },
+    "sources": {
+      "title": "Fuentes de datos",
+      "intro": "Qué aporta cada fuente, con qué endpoint y bajo qué licencia.",
+      "labels": {
+        "role": "Aporta",
+        "endpoint": "Endpoint",
+        "license": "Licencia"
+      },
+      "details": {
+        "wikidata": {
+          "role": "Identidad de artistas (QID), etiquetas por idioma, fechas, país, géneros, instrumentos, discografía parcial, influencias (P737/P1066), colaboraciones e identificadores externos (MusicBrainz, Discogs, Spotify, Last.fm, AllMusic).",
+          "endpoint": "query.wikidata.org/sparql (Blazegraph, WDQS v1)",
+          "license": "CC0 1.0 (dominio público)",
+          "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing"
+        },
+        "qlever": {
+          "role": "La misma base de Wikidata servida por QLever. Entra como relevo automático cuando el núcleo falla o expira, y también está disponible como fuente explícita en el selector.",
+          "endpoint": "qlever.dev/api/wikidata (endpoint comunitario de ensayo)",
+          "license": "CC0 1.0 (los mismos datos de Wikidata)",
+          "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing"
+        },
+        "wikipedia": {
+          "role": "Biografía en el idioma de la interfaz, desde el artículo enlazado (sitelink) del artista. Se muestra con atribución y enlace al artículo original.",
+          "endpoint": "{lang}.wikipedia.org/api/rest_v1/page/summary (REST)",
+          "license": "CC BY-SA 4.0 (con atribución)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+        },
+        "dbpedia": {
+          "role": "Resumen (abstract) en español como respaldo de la biografía. También disponible como proveedor explícito para búsqueda y rasgos.",
+          "endpoint": "es.dbpedia.org/sparql y dbpedia.org/sparql (Virtuoso)",
+          "license": "CC BY-SA (con atribución)",
+          "licenseUrl": "https://www.dbpedia.org/about/"
+        },
+        "musicbrainz": {
+          "role": "Discografía (grupos de lanzamiento: álbumes, singles y EP) con fecha y tipo; géneros curados; relaciones reales entre artistas: miembro de banda, colaboración, profesor y tributo.",
+          "endpoint": "musicbrainz.org/ws/2 (REST)",
+          "license": "Licencia de datos de MusicBrainz (core en dominio público)",
+          "licenseUrl": "https://musicbrainz.org/doc/About/Data_License"
+        },
+        "discogs": {
+          "role": "Lanzamientos (hasta 100 por artista) con año, sello y formato; búsqueda de identidad cuando el artista no tiene ID de Discogs.",
+          "endpoint": "api.discogs.com (REST, token personal)",
+          "license": "Términos de uso de Discogs",
+          "licenseUrl": "https://www.discogs.com/terms"
+        }
+      }
+    },
+    "limits": {
+      "title": "Límites y resiliencia",
+      "intro": "Cuotas públicas de cada API y cómo las mitiga MusiGraph.",
+      "caption": "Límites públicos de cada fuente y mitigaciones aplicadas en MusiGraph.",
+      "columns": { "source": "Fuente", "limit": "Límite público", "mitigation": "Mitigación en MusiGraph" },
+      "rows": [
+        { "source": "Wikidata (WDQS)", "limit": "≈60 s de proceso por minuto y 5 consultas en paralelo por IP.", "mitigation": "Caché de 1 h en servidor y 10 min en cliente; 12 s de timeout con relevo a QLever; 2–3 consultas por vista." },
+        { "source": "QLever", "limit": "Endpoint comunitario de ensayo, sin garantía de servicio.", "mitigation": "Solo entra como relevo o fuente explícita; 8 s de timeout." },
+        { "source": "DBpedia (Virtuoso)", "limit": "Puede responder 200 con resultados parciales.", "mitigation": "Consultas ligeras y enriquecimiento por lotes; nunca se confía en agregados; 6 s de timeout." },
+        { "source": "Wikipedia (REST)", "limit": "API pública de lectura, sin cuota estricta.", "mitigation": "6 s de timeout y caché de 6 h por idioma y título." },
+        { "source": "MusicBrainz", "limit": "1 petición por segundo.", "mitigation": "Cola con 1,1 s de espaciado y User-Agent propio; caché de 24 h; nunca bloquea el perfil." },
+        { "source": "Discogs", "limit": "≈60 peticiones por minuto autenticado.", "mitigation": "Token solo en servidor; caché de 24 h; la fuente se desactiva sin token." }
+      ]
+    },
+    "v2": {
+      "title": "Migración a WDQS v2",
+      "body": "Los endpoints v2 de Wikidata (query-next.wikidata.org) se abren a la comunidad en noviembre de 2026 y los actuales (Blazegraph) empezarán a degradarse en febrero de 2027. QLever ya funciona como relevo y como opción explícita del selector, y todas las consultas se escriben para ser compatibles con ambos motores: sin servicio de etiquetas en QLever (bloques OPTIONAL/COALESCE) y con fechas xsd:dateTime estrictas."
+    }
   },
   "header": {
     "dataSource": "Fuente de datos:",

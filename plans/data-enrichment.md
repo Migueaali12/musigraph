@@ -13,12 +13,13 @@
 | **1** | Optimización de consultas Wikidata + DBpedia funcional | ✅ Completada |
 | **2** | Enriquecimiento multi-fuente + modo **Auto** + Discogs | ✅ Completada (2026-10-09) |
 | **3** | UI y rendimiento (selector Auto, badges de fuente, render progresivo) | ✅ Completada (2026-10-09) |
-| **4** | Página de metodología `/[lang]/data` | ⏳ Pendiente (puente mínimo ya creado) |
+| **4** | Página de metodología `/[lang]/data` | ✅ Completada (2026-10-09) |
 | **5** | Preparación WDQS v2 (`query-next.wikidata.org`) y monitoreo | ⏳ Pendiente |
 
 **Commits:**
 - `27acad8` — Fase 0 + Fase 1 completas (en `feat/data-enrichment`).
 - `0e7c880` — fix de claves duplicadas en discografía (en `feat/data-enrichment`, **sin pushear**).
+- `9984d6f` — upgrade a Next.js 16.4 (en `feat/data-enrichment`, **sin pushear**).
 - `main` fue restaurado a `596595f` (el commit accidental se movió a la rama con force-push).
 
 ---
@@ -268,12 +269,23 @@ Entregado (2026-10-09):
 - Página `/[lang]/data` puente: título, intro, 5 secciones ancla y nota de "Fase 4" (la metodología completa — diagrama, límites y licencias — sigue siendo el alcance de Fase 4).
 - Coalescing in-flight en `resolveArtistData` (el perfil lanza 4 acciones en paralelo; una sola llamada a wbgetentities en frío).
 
-## 8. Fase 4 — Página de metodología `/[lang]/data` ⏳
+## 8. Fase 4 — Página de metodología `/[lang]/data` ✅
 
+**Alcance previsto (cumplido):**
 - Título: "Cómo se construyen los datos" / "How the data is built".
 - Contenido: diagrama de flujo (SVG inline), tabla de proveedores y qué aporta cada uno, reglas del modo Auto (precedencia, dedupe, sugerencias vs. datos reales), transparencia de límites (WDQS 60 s/5 paralelas, parciales de Virtuoso, MB 1 req/s, Discogs 60 req/min), licencias (Wikidata CC0, DBpedia CC BY-SA, MusicBrainz data license, Wikipedia CC BY-SA, Discogs terms), nota de migración v2/QLever.
 - Enlace desde footer y desde badges de fuente (anclas `#wikidata`, `#musicbrainz`, `#dbpedia`, `#discogs`, `#wikipedia`, `#auto`).
 - i18n en `en.json` / `es.json`; server component; sin CLS; accesible.
+
+**Entregado (2026-10-09):**
+- `src/app/[lang]/data/page.tsx` reescrita como server component estático (cero JS de cliente) con `generateMetadata` i18n y secciones: flujo, reglas del modo Auto, fuentes, límites y migración v2.
+- Diagrama de flujo SVG inline (`src/components/data/DataFlowDiagram.tsx`): 7 nodos / 7 conectores ortogonales con codos `r=8`, máscaras opacas, coral solo en `auto` y `merge + provenance`; tema claro/oscuro por tokens; `role="img"` + `title`/`desc` con ids prefijados; `overflow-x-auto` en móvil (sin overflow de página).
+- Anclas completas: `#auto`, `#wikidata`, `#qlever`, `#wikipedia`, `#dbpedia`, `#musicbrainz`, `#discogs` (más `#flow`, `#sources`, `#limits`, `#v2`). Se corrigió el ancla rota `#qlever` (los badges de failover de `auto` enlazaban a una sección inexistente).
+- `src/components/data/MethodologySection.tsx` y `MethodologyTable.tsx` (composición, sin boolean props): tablas semánticas con `<caption>` sr-only y `th[scope]`, scroll horizontal interno.
+- Licencias por fuente con enlace externo; apuntes de precisión: la imagen solo usa `P18` de Wikidata (sin respaldos aún) y el nombre sale de la etiqueta de Wikidata con respaldo multilingüe.
+- Footer de `HomeClient`: enlace interno a `/${locale}/data`.
+- Upgrade previo a Next.js 16.4 (`9984d6f`, commit aislado): `next lint` → ESLint CLI con flat config nativo, `middleware.ts` → `proxy.ts`, `useSyncExternalStore` en `ThemeToggle`/`useSystemPrefersDark`, resets por evento en `ArtistProfile` (reglas `react-hooks` v6), `images.maximumRedirects: 5` para Wikimedia.
+- Validado: `pnpm typecheck && pnpm lint && pnpm build` + navegador (helium) en `/en/data` y `/es/data`, claro/oscuro, 392px sin overflow, anclas presentes, cero errores de consola.
 
 ## 9. Fase 5 — v2 readiness ⏳
 
@@ -322,13 +334,15 @@ Acciones actuales: `searchArtist`, `getArtistDiscography`, `getArtistInfluences`
 | MusicBrainz 1 req/s | Cola + caché 24 h + timeout 8 s; nunca path crítico |
 | qlever.dev es un endpoint comunitario | Usar como ensayo; oficial v2 llega nov 2026 |
 | `auto` ya es el modo por defecto | Opciones explícitas se mantienen para comparar/depurar; failover WD→QLever con presupuesto de 12 s/8 s |
-| Fix `0e7c880` sin pushear | `git push` cuando el usuario lo indique |
+| Commits de Fase 3–4 y upgrade a Next 16 sin pushear | `git push` cuando el usuario lo indique |
 
 ## 12. Estado de git
 
 ```
 feat/data-enrichment (actual, upstream configurado)
-  ├─ Fase 3 completa en working tree (ver §7)
+  ├─ Fase 4 completa (ver §8) + upgrade Next 16  [sin pushear]
+  ├─ 9984d6f chore(deps): upgrade to Next.js 16
+  ├─ e976d17 feat(ui): auto mode by default with progressive profile rendering [pusheado]
   ├─ 03f84a4 feat(enrichment): multi-source auto mode with provenance      [pusheado]
   ├─ 0e7c880 fix(discography): dedupe releases to avoid duplicate React keys  [pusheado]
   └─ 27acad8 feat: add featured artist IDs and remove unused SPARQL queries   [pusheado]
