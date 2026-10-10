@@ -62,3 +62,21 @@ export function sanitizeTextIndexTerm(value: unknown): string {
     .trim()
     .slice(0, 80)
 }
+
+/**
+ * Build a safe Virtuoso `bif:contains` expression from a user term.
+ * Multi-word terms must be quoted as a phrase: `bif:contains "The Beatles"`
+ * raises `XM029: syntax error at Beatles`, while `'The Beatles'` searches the
+ * phrase. Apostrophes/hyphens are dropped because they break that quoting.
+ */
+export function buildTextIndexExpression(value: unknown): string {
+  const tokens = sanitizeTextIndexTerm(value)
+    .replace(/['-]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 8)
+
+  if (tokens.length === 0) return ""
+  if (tokens.length === 1) return tokens[0]
+  return `'${tokens.join(" ")}'`
+}

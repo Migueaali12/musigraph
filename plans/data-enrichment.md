@@ -14,7 +14,7 @@
 | **2** | Enriquecimiento multi-fuente + modo **Auto** + Discogs | ✅ Completada (2026-10-09) |
 | **3** | UI y rendimiento (selector Auto, badges de fuente, render progresivo) | ✅ Completada (2026-10-09) |
 | **4** | Página de metodología `/[lang]/data` | ✅ Completada (2026-10-09) |
-| **5** | Preparación WDQS v2 (`query-next.wikidata.org`) y monitoreo | ⏳ Pendiente |
+| **5** | Preparación WDQS v2 (`query-next.wikidata.org`) y monitoreo | ✅ Completada (2026-10-09) |
 
 **Commits:**
 - `27acad8` — Fase 0 + Fase 1 completas (en `feat/data-enrichment`).
@@ -287,11 +287,25 @@ Entregado (2026-10-09):
 - Upgrade previo a Next.js 16.4 (`9984d6f`, commit aislado): `next lint` → ESLint CLI con flat config nativo, `middleware.ts` → `proxy.ts`, `useSyncExternalStore` en `ThemeToggle`/`useSystemPrefersDark`, resets por evento en `ArtistProfile` (reglas `react-hooks` v6), `images.maximumRedirects: 5` para Wikimedia.
 - Validado: `pnpm typecheck && pnpm lint && pnpm build` + navegador (helium) en `/en/data` y `/es/data`, claro/oscuro, 392px sin overflow, anclas presentes, cero errores de consola.
 
-## 9. Fase 5 — v2 readiness ⏳
+## 9. Fase 5 — v2 readiness ✅
 
+**Alcance previsto (cumplido):**
 - Feature flag para cambiar el endpoint por defecto a `query-next.wikidata.org` cuando sea público (nov 2026).
 - Probar el suite completo contra QLever y corregir diferencias (fechas estrictas, multiplicidad de labels).
 - Monitoreo de latencias/429/parciales para decidir el corte antes de feb 2027.
+
+**Entregado (2026-10-09):**
+- `src/services/endpoints.ts` (server-only): resolución del endpoint efectivo por proveedor. Precedencia `WDQS_ENDPOINT` (override explícito) > `WDQS_V2_ENABLED=true` (corte a `query-next.wikidata.org`) > default v1. URL inválida → warning y fallback a v1.
+- `src/services/monitoring.ts` + instrumentación en `sparqlExecutor.ts`: por endpoint efectivo (`wikidata` / `wikidata-v2` / `wikidata-custom` / `qlever` / `dbpedia`) se registran requests, ok, parciales (Virtuoso), 429/5xx reintentables, timeouts, errores, latencia media/p95 y últimos eventos (ring buffer).
+- `GET /api/health` (dinámico, sin secretos): snapshot + config resuelta; `?probe=1` ejecuta una consulta indexada minúscula contra cada motor (caché 60 s, sin contaminar métricas) y devuelve `status: degraded` si alguno falla.
+- `scripts/verify-engines.mjs`: suite de paridad v1/QLever/DBpedia/auto (15 casos) con conteos, distintos, duplicados exactos y snapshot de salud. Correr con el servidor levantado.
+- Bugs reales encontrados y corregidos por el suite:
+  - DBpedia: `bif:contains "The Beatles"` devolvía 500 (Virtuoso `XM029`); `buildTextIndexExpression` genera ahora la frase `'The Beatles'` (un solo token se deja igual). Verificado 200.
+  - DBpedia traits: filas exactamente duplicadas por OPTIONALs multi-valor → `SELECT DISTINCT`.
+  - `searchByGenre` en WDQS v1: 23–25 s (timeout) → subquery `ORDER BY + LIMIT 20` antes de OPTIONALs y labels: 5.2–5.6 s. QLever sin cambios (1.4–1.9 s).
+- Verificación del flag v2 en vivo (aún 403, no público): `WDQS_V2_ENABLED=true` → label `Wikidata v2`, failover automático a QLever con `sources: {wikidata: "error", qlever: "ok"}` y `?probe=1` → `degraded` con el error real. `WDQS_ENDPOINT=…` probado en modo `wikidata-custom`.
+- Suite final: **15/15 OK**; paridad de distintos: influencias 40=40, colaboraciones 36=36; discografía 48 (v1) vs 44 (QLever) — diferencia de etiquetado, sin duplicados exactos.
+- `.env.example` (con `!.env.example` en `.gitignore`) para `DISCOGS_TOKEN`, `WDQS_V2_ENABLED` y `WDQS_ENDPOINT`.
 
 ---
 
@@ -318,6 +332,13 @@ curl -s -X POST http://localhost:3000/api/sparql -H 'Content-Type: application/j
 # Colaboraciones (incluye workType)
 curl -s -X POST http://localhost:3000/api/sparql -H 'Content-Type: application/json' \
   -d '{"action":"getCollaborations","params":{"artistId":"Q1299","provider":"wikidata","lang":"en"}}'
+
+# Salud de motores y monitorización (Fase 5)
+curl -s http://localhost:3000/api/health
+curl -s 'http://localhost:3000/api/health?probe=1'
+
+# Suite de paridad v1/QLever/DBpedia/auto (requiere servidor levantado)
+node scripts/verify-engines.mjs
 ```
 
 Acciones actuales: `searchArtist`, `getArtistDiscography`, `getArtistInfluences`, `getCollaborations`, `searchByGenre`, `getTopBands`, `getArtistEnrichment`. Params comunes: `provider`, `lang`, `mbid`, `discogsId`, `source` (`musicbrainz`).
@@ -328,7 +349,8 @@ Acciones actuales: `searchArtist`, `getArtistDiscography`, `getArtistInfluences`
 
 | Riesgo | Mitigación actual / pendiente |
 |---|---|
-| WDQS throttling (60 s proceso/min, 5 paralelas/IP) | Caché + máx. 2–3 queries por vista; `auto` hace failover a QLever con timeouts 12 s/8 s |
+| WDQS throttling (60 s proceso/min, 5 paralelas/IP) | Caché + máx. 2–3 queries por vista; `auto` hace failover a QLever con timeouts 12 s/8 s; `searchByGenre` con subquery LIMIT (23–25 s → ~5 s en v1) |
+| Corte a WDQS v2 (nov 2026) | Flag `WDQS_V2_ENABLED` / `WDQS_ENDPOINT` sin cambios de código; `GET /api/health?probe=1` + `scripts/verify-engines.mjs` para decidir con datos |
 | Parciales de Virtuoso (200 OK con datos incompletos) | Query ligera + lotes; logs de headers; no confiar en agregados de DBpedia |
 | DBpedia sin álbumes/colaboraciones de muchos artistas | Wikidata/MusicBrainz son las fuentes reales; DBpedia solo enriquece |
 | MusicBrainz 1 req/s | Cola + caché 24 h + timeout 8 s; nunca path crítico |

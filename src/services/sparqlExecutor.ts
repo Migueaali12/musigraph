@@ -1,17 +1,26 @@
 import type { ProviderInfo } from "./providers"
 import type { SparqlResponse } from "./sparqlTypes"
 import { isQid } from "@/utils/validation"
+import { resolveSparqlTarget } from "./endpoints"
+import {
+  recordSparqlFailure,
+  recordSparqlSuccess,
+  recordSparqlThrottle,
+} from "./monitoring"
 
 // ── Server-side SPARQL execution ───────────────────────────────────────────
 // Single fetch layer used by every engine (Blazegraph, QLever, Virtuoso).
 // The `auto` orchestrator tightens timeouts and disables retries so a slow
 // primary can fail over to QLever within the route's 30 s budget.
+// Outcomes are recorded in the monitoring registry (see /api/health).
 
 export interface QueryRunOptions {
   /** Abort the request after this many ms (default 25 s). */
   timeoutMs?: number
   /** Retry once on 429/502/503/504 (default 1). */
   retries?: number
+  /** Record latency/error metrics (default true; health probes opt out). */
+  recordMetrics?: boolean
 }
 
 const DEFAULT_TIMEOUT_MS = 25_000
@@ -22,18 +31,21 @@ export async function executeSparqlQuery(
   options: QueryRunOptions = {},
   attempt = 0
 ): Promise<SparqlResponse> {
-  const { timeoutMs = DEFAULT_TIMEOUT_MS, retries = 1 } = options
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, retries = 1, recordMetrics = true } =
+    options
+  const target = resolveSparqlTarget(provider)
 
   // Abort before Next.js hard-kills the function
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
   const start = Date.now()
   const queryPreview = query.replace(/\s+/g, " ").trim().slice(0, 120)
+  let httpFailureRecorded = false
 
-  console.log(`[SPARQL] → ${provider.label} | query: ${queryPreview}…`)
+  console.log(`[SPARQL] → ${target.label} | query: ${queryPreview}…`)
 
   try {
-    const response = await fetch(provider.url, {
+    const response = await fetch(target.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/sparql-query",
@@ -52,43 +64,77 @@ export async function executeSparqlQuery(
     if (retriableStatus.includes(response.status) && attempt < retries) {
       const retryAfter = Number(response.headers.get("retry-after") ?? "1")
       const waitMs = Math.min(Math.max(retryAfter, 1), 5) * 1000
+      if (recordMetrics) {
+        recordSparqlThrottle(target.key, response.status, elapsed)
+      }
       console.warn(
-        `[SPARQL] ${response.status} from ${provider.label}, retrying in ${waitMs} ms`
+        `[SPARQL] ${response.status} from ${target.label}, retrying in ${waitMs} ms`
       )
       await new Promise((resolve) => setTimeout(resolve, waitMs))
       return executeSparqlQuery(query, provider, options, attempt + 1)
     }
 
     if (!response.ok) {
+      if (recordMetrics) {
+        recordSparqlFailure(
+          target.key,
+          "http",
+          elapsed,
+          `HTTP ${response.status}`
+        )
+        httpFailureRecorded = true
+      }
       console.error(
-        `[SPARQL] ✗ ${provider.label} HTTP ${response.status} ${response.statusText} (${elapsed} ms)`
+        `[SPARQL] ✗ ${target.label} HTTP ${response.status} ${response.statusText} (${elapsed} ms)`
       )
       throw new Error(`SPARQL query failed: ${response.statusText}`)
     }
 
-    // Virtuoso (DBpedia) returns partial results with HTTP 200 — surface it in logs.
+    // Virtuoso (DBpedia) returns partial results with HTTP 200 — surface it in
+    // logs and monitoring.
+    let partial = false
     if (provider.engine === "virtuoso") {
       const maxRows = response.headers.get("x-sparql-maxrows")
       const sqlMessage = response.headers.get("x-sql-message")
       if (maxRows || sqlMessage) {
+        partial = true
         console.warn(
-          `[SPARQL] ⚠ ${provider.label} returned PARTIAL results (${sqlMessage ?? `maxRows=${maxRows}`})`
+          `[SPARQL] ⚠ ${target.label} returned PARTIAL results (${sqlMessage ?? `maxRows=${maxRows}`})`
         )
       }
     }
 
     const data = (await response.json()) as SparqlResponse
     const count = data.results?.bindings?.length ?? 0
-    console.log(`[SPARQL] ✓ ${provider.label} | ${count} result(s) | ${elapsed} ms`)
+    if (recordMetrics) {
+      recordSparqlSuccess(target.key, elapsed, partial)
+    }
+    console.log(`[SPARQL] ✓ ${target.label} | ${count} result(s) | ${elapsed} ms`)
     return data
   } catch (err) {
     const elapsed = Date.now() - start
     if (err instanceof Error && err.name === "AbortError") {
-      console.error(`[SPARQL] ✗ ${provider.label} | TIMEOUT after ${elapsed} ms`)
+      if (recordMetrics) {
+        recordSparqlFailure(
+          target.key,
+          "timeout",
+          elapsed,
+          `timeout after ${timeoutMs} ms`
+        )
+      }
+      console.error(`[SPARQL] ✗ ${target.label} | TIMEOUT after ${elapsed} ms`)
       throw new Error(`SPARQL query timed out after ${Math.round(timeoutMs / 1000)} seconds`)
     }
+    if (!httpFailureRecorded && recordMetrics) {
+      recordSparqlFailure(
+        target.key,
+        "network",
+        elapsed,
+        err instanceof Error ? err.message : String(err)
+      )
+    }
     console.error(
-      `[SPARQL] ✗ ${provider.label} | ${err instanceof Error ? err.message : String(err)} (${elapsed} ms)`
+      `[SPARQL] ✗ ${target.label} | ${err instanceof Error ? err.message : String(err)} (${elapsed} ms)`
     )
     throw err
   } finally {

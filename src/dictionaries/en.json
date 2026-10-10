@@ -193,7 +193,7 @@
     },
     "v2": {
       "title": "WDQS v2 migration",
-      "body": "Wikidata's v2 endpoints (query-next.wikidata.org) open to the community in November 2026 and the current ones (Blazegraph) will start degrading in February 2027. QLever already works as failover and as an explicit selector option, and every query is written to run on both engines: no label service on QLever (OPTIONAL/COALESCE blocks) and strict xsd:dateTime dates."
+      "body": "Wikidata's v2 endpoints (query-next.wikidata.org) open to the community in November 2026 and the current ones (Blazegraph) will start degrading in February 2027. QLever already works as failover and as an explicit selector option, and every query is written to run on both engines: no label service on QLever (OPTIONAL/COALESCE blocks) and strict xsd:dateTime dates. The endpoint is switchable through server configuration, with no code changes, so the cutover and rollback happen when the v2 endpoints go public."
     }
   },
   "header": {

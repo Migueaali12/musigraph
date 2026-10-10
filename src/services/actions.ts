@@ -28,7 +28,7 @@ import {
   buildDbpediaInfluencesQuery,
 } from "./queries/dbpedia"
 import { FEATURED_ARTIST_IDS } from "@/utils/constants"
-import { sanitizeSearchTerm, sanitizeTextIndexTerm } from "@/utils/validation"
+import { sanitizeSearchTerm, buildTextIndexExpression } from "@/utils/validation"
 
 // ── Explicit-provider actions (wikidata / qlever / dbpedia) ────────────────
 // The `auto` orchestrator reuses these against Wikidata (with a QLever
@@ -138,7 +138,7 @@ export async function searchArtist(
 ): Promise<SparqlResponse> {
   // DBpedia has no entity-resolution API here: search by indexed label text.
   if (provider.engine === "virtuoso") {
-    const term = sanitizeTextIndexTerm(name)
+    const term = buildTextIndexExpression(name)
     if (!term) return emptyResponse()
     const query = buildDbpediaArtistSearchQuery(term, lang, { decade: filters.decade })
     const response = await executeSparqlQuery(query, provider, run)

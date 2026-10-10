@@ -193,7 +193,7 @@
     },
     "v2": {
       "title": "Migración a WDQS v2",
-      "body": "Los endpoints v2 de Wikidata (query-next.wikidata.org) se abren a la comunidad en noviembre de 2026 y los actuales (Blazegraph) empezarán a degradarse en febrero de 2027. QLever ya funciona como relevo y como opción explícita del selector, y todas las consultas se escriben para ser compatibles con ambos motores: sin servicio de etiquetas en QLever (bloques OPTIONAL/COALESCE) y con fechas xsd:dateTime estrictas."
+      "body": "Los endpoints v2 de Wikidata (query-next.wikidata.org) se abren a la comunidad en noviembre de 2026 y los actuales (Blazegraph) empezarán a degradarse en febrero de 2027. QLever ya funciona como relevo y como opción explícita del selector, y todas las consultas se escriben para ser compatibles con ambos motores: sin servicio de etiquetas en QLever (bloques OPTIONAL/COALESCE) y con fechas xsd:dateTime estrictas. El endpoint es conmutable por configuración del servidor, sin cambios de código, para hacer el corte y la reversión cuando los endpoints v2 sean públicos."
     }
   },
   "header": {

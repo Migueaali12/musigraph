@@ -235,30 +235,39 @@ export function buildGenreSearchQuery(
   engine: Engine,
   lang: Lang
 ): string {
-  const dataBlock = `{
+  // Seed block only: the enrichments are applied after a LIMIT so WDQS never
+  // sorts the whole genre population (23 s → 5.6 s on the rock genre).
+  const seedBlock = `{
     { ?artist wdt:P31 wd:Q215380 . }
     UNION
     { ?artist wdt:P31 wd:Q5 ; wdt:P106 wd:Q639669 . }
   }
-  ?artist wdt:P136 wd:${genreId} .
-  OPTIONAL { ?artist wdt:P495 ?country }
-  OPTIONAL { ?artist wdt:P27 ?country }
-  OPTIONAL { ?artist wdt:P571 ?formationDate }
-  OPTIONAL { ?artist wikibase:sitelinks ?sitelinks }`
+  ?artist wdt:P136 wd:${genreId} .`
 
   if (engine === "blazegraph") {
     return `${WD_PREFIXES}
 SELECT ?artist ?artistLabel ?country ?countryLabel ?formationDate ?sitelinks WHERE {
-  ${dataBlock}
+  { SELECT DISTINCT ?artist ?formationDate ?sitelinks WHERE {
+      ${seedBlock}
+      OPTIONAL { ?artist wdt:P571 ?formationDate }
+      OPTIONAL { ?artist wikibase:sitelinks ?sitelinks }
+    }
+    ORDER BY ?formationDate
+    LIMIT 20 }
+  OPTIONAL { ?artist wdt:P495 ?country }
+  OPTIONAL { ?artist wdt:P27 ?country }
   ${labelServiceBlock(lang)}
 }
-ORDER BY ?formationDate
-LIMIT 20`
+ORDER BY ?formationDate`
   }
 
   return `${WD_PREFIXES}
 SELECT ?artist ?country ?formationDate ?sitelinks WHERE {
-  ${dataBlock}
+  ${seedBlock}
+  OPTIONAL { ?artist wdt:P495 ?country }
+  OPTIONAL { ?artist wdt:P27 ?country }
+  OPTIONAL { ?artist wdt:P571 ?formationDate }
+  OPTIONAL { ?artist wikibase:sitelinks ?sitelinks }
 }
 ORDER BY ?formationDate
 LIMIT 20`

@@ -35,7 +35,8 @@ function chainedLabelBlocks(chain: string, alias: string, lang: Lang): string {
 }
 
 /**
- * Artist search on DBpedia. `term` must already be sanitized for bif:contains.
+ * Artist search on DBpedia. `term` must already be a safe Virtuoso free-text
+ * expression (see `buildTextIndexExpression`: single token or quoted phrase).
  * A subquery LIMIT resolves the matching artists first; enrichment joins run
  * only over those ~30 resources (the full query with inline label chains times
  * out on Virtuoso). Genre/country/instrument labels arrive via
@@ -78,7 +79,7 @@ export function buildDbpediaArtistTraitsQuery(
   const values = artistUris.map((uri) => `<${uri}>`).join(" ")
 
   return `${DBPEDIA_PREFIXES}
-SELECT ?artist ?genreLabel ?countryLabel ?instrumentLabel WHERE {
+SELECT DISTINCT ?artist ?genreLabel ?countryLabel ?instrumentLabel WHERE {
   VALUES ?artist { ${values} }
   ${chainedLabelBlocks("?artist dbo:genre", "genreLabel", lang)}
   ${chainedLabelBlocks("?artist dbo:birthPlace", "countryLabel", lang)}
