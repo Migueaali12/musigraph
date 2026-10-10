@@ -76,14 +76,18 @@ export function buildArtistProfileQuery(
   OPTIONAL { ?artist wdt:P495 ?origin }
   BIND(COALESCE(?citizenship, ?origin) AS ?country)
   OPTIONAL { ?artist wdt:P18 ?image }
-  OPTIONAL { ?artist wikibase:sitelinks ?sitelinks }`
+  OPTIONAL { ?artist wikibase:sitelinks ?sitelinks }
+  OPTIONAL { ?artist wdt:P1953 ?discogsId }
+  OPTIONAL { ?artist wdt:P1902 ?spotifyId }
+  OPTIONAL { ?artist wdt:P3192 ?lastfmId }
+  OPTIONAL { ?artist wdt:P1728 ?allmusicId }`
 
   const isV1 = engine === "blazegraph"
   const labelProjection = isV1 ? " ?artistLabel ?artistDescription ?countryLabel" : ""
   const labelBlock = isV1 ? `\n  ${labelServiceBlock(lang)}` : ""
 
   return `${WD_PREFIXES}
-SELECT ?artist ?sitelinks ?mbid ?birthDate ?formationDate ?country ?image${labelProjection}
+SELECT ?artist ?sitelinks ?mbid ?birthDate ?formationDate ?country ?image ?discogsId ?spotifyId ?lastfmId ?allmusicId${labelProjection}
 WHERE {${dataBlock}${filterBlock}${labelBlock}
 }`
 }
@@ -130,14 +134,15 @@ export function buildDiscographyQuery(
   if (engine === "blazegraph") {
     // LIMIT before the label service: only ~60 rows get labelled.
     return `${WD_PREFIXES}
-SELECT ?album ?albumLabel ?releaseDate ?label ?labelLabel ?genre ?genreLabel ?albumType ?albumTypeLabel WHERE {
+SELECT ?album ?albumLabel ?releaseDate ?label ?labelLabel ?genre ?genreLabel ?albumType ?albumTypeLabel ?mbReleaseGroupId WHERE {
   {
-    SELECT DISTINCT ?album ?releaseDate ?label ?genre ?albumType WHERE {
+    SELECT DISTINCT ?album ?releaseDate ?label ?genre ?albumType ?mbReleaseGroupId WHERE {
       VALUES ?albumType { ${types} }
       ?album wdt:P31 ?albumType ; wdt:P175 wd:${artistId} .
       OPTIONAL { ?album wdt:P577 ?releaseDate }
       OPTIONAL { ?album wdt:P264 ?label }
       OPTIONAL { ?album wdt:P136 ?genre }
+      OPTIONAL { ?album wdt:P436 ?mbReleaseGroupId }
     }
     ORDER BY ?releaseDate
     LIMIT 60
@@ -147,12 +152,13 @@ SELECT ?album ?albumLabel ?releaseDate ?label ?labelLabel ?genre ?genreLabel ?al
   }
 
   return `${WD_PREFIXES}
-SELECT ?album ?releaseDate ?label ?genre ?albumType WHERE {
+SELECT ?album ?releaseDate ?label ?genre ?albumType ?mbReleaseGroupId WHERE {
   VALUES ?albumType { ${types} }
   ?album wdt:P31 ?albumType ; wdt:P175 wd:${artistId} .
   OPTIONAL { ?album wdt:P577 ?releaseDate }
   OPTIONAL { ?album wdt:P264 ?label }
   OPTIONAL { ?album wdt:P136 ?genre }
+  OPTIONAL { ?album wdt:P436 ?mbReleaseGroupId }
 }
 ORDER BY ?releaseDate
 LIMIT 60`

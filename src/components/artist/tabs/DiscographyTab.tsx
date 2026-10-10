@@ -1,5 +1,6 @@
 import { Disc } from "lucide-react"
 import type { AlbumInfo } from "@/services/sparqlService"
+import { SourceBadge } from "@/components/common/SourceBadge"
 import { extractYear } from "@/utils/date"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 import { TabEmpty } from "./TabEmpty"
@@ -37,6 +38,7 @@ export function DiscographyTab({ discography, dict }: DiscographyTabProps) {
                   {album.type}
                 </span>
               )}
+              {album.source && <SourceBadge source={album.source} />}
             </span>
             {album.label && (
               <span className='col-start-2 text-[13px] text-muted sm:col-start-auto sm:text-right'>

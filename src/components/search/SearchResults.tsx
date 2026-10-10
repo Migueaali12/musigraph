@@ -5,6 +5,7 @@ import { type ArtistInfo } from "@/services/sparqlService"
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { getInitials } from "@/utils/format"
+import { extractYear } from "@/utils/date"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface SearchResultsProps {
@@ -115,9 +116,7 @@ function ArtistRow({ artist, onClick }: ArtistRowProps) {
   const [imageError, setImageError] = useState(false)
 
   const hasImage = Boolean(artist.image) && !imageError
-  const year = artist.birthDate
-    ? new Date(artist.birthDate).getFullYear()
-    : null
+  const year = extractYear(artist.birthDate)
 
   const metaParts: string[] = []
   if (artist.country) metaParts.push(artist.country)

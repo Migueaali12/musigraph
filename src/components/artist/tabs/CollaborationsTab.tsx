@@ -41,30 +41,33 @@ export function CollaborationsTab({ collaborations, dict }: CollaborationsTabPro
           </div>
 
           <ul className='mt-1.5 space-y-1'>
-            {group.works.slice(0, MAX_VISIBLE_WORKS).map((work, index) => {
-              const year = extractYear(work.releaseDate)
-              return (
-                <li
-                  key={`${work.work}-${index}`}
-                  className='flex items-baseline gap-2 text-[13px] text-muted'
-                >
-                  <span className='min-w-0 truncate'>{work.work}</span>
-                  {work.workType === "album" && (
-                    <span className='chip shrink-0 border-turquoise/20 bg-turquoise-soft text-turquoise'>
-                      {dict.artist.albumWork}
-                    </span>
-                  )}
-                  {year !== null && (
-                    <span className='ml-auto shrink-0'>{year}</span>
-                  )}
-                </li>
-              )
-            })}
-            {group.works.length > MAX_VISIBLE_WORKS && (
+            {group.works
+              .filter((work) => Boolean(work.work))
+              .slice(0, MAX_VISIBLE_WORKS)
+              .map((work, index) => {
+                const year = extractYear(work.releaseDate)
+                return (
+                  <li
+                    key={`${work.work}-${index}`}
+                    className='flex items-baseline gap-2 text-[13px] text-muted'
+                  >
+                    <span className='min-w-0 truncate'>{work.work}</span>
+                    {work.workType === "album" && (
+                      <span className='chip shrink-0 border-turquoise/20 bg-turquoise-soft text-turquoise'>
+                        {dict.artist.albumWork}
+                      </span>
+                    )}
+                    {year !== null && (
+                      <span className='ml-auto shrink-0'>{year}</span>
+                    )}
+                  </li>
+                )
+              })}
+            {group.works.filter((work) => Boolean(work.work)).length > MAX_VISIBLE_WORKS && (
               <li className='text-[13px] text-muted'>
                 {dict.artist.moreWorks.replace(
                   "{count}",
-                  String(group.works.length - MAX_VISIBLE_WORKS)
+                  String(group.works.filter((work) => Boolean(work.work)).length - MAX_VISIBLE_WORKS)
                 )}
               </li>
             )}

@@ -1,15 +1,26 @@
 import type { ArtistInfo } from "@/services/sparqlService"
 import type { ProcessedArtistData } from "@/services/dataProcessor"
+import type { ArtistBio } from "@/services/sparqlTypes"
+import type { SourceStatusMap } from "@/services/sources"
+import { SourceBadge } from "@/components/common/SourceBadge"
 import { extractYear } from "@/utils/date"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 
 interface OverviewTabProps {
   artist: ArtistInfo
   processedData: ProcessedArtistData
+  bio?: ArtistBio
+  sources?: SourceStatusMap
   dict: Dictionary
 }
 
-export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
+export function OverviewTab({
+  artist,
+  processedData,
+  bio,
+  sources,
+  dict,
+}: OverviewTabProps) {
   const countryPart = artist.country
     ? dict.artist.overviewDescriptionCountry.replace("{country}", artist.country)
     : ""
@@ -41,6 +52,10 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
     },
   ]
 
+  const provenance = sources
+    ? (Object.entries(sources) as [keyof SourceStatusMap, NonNullable<SourceStatusMap[keyof SourceStatusMap]>][])
+    : []
+
   return (
     <div className='space-y-8'>
       <p className='max-w-prose text-[15px] leading-relaxed text-muted'>
@@ -50,6 +65,50 @@ export function OverviewTab({ artist, processedData, dict }: OverviewTabProps) {
           .replace("{activeSince}", activePart)
           .replace("{genres}", genresPart)}
       </p>
+
+      {bio && (
+        <section>
+          <p className='max-w-prose text-[15px] leading-relaxed'>{bio.text}</p>
+          <p className='mt-2 text-xs text-muted'>
+            {dict.artist.sourceLabel}{" "}
+            {bio.url ? (
+              <a
+                href={bio.url}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='link text-accent'
+              >
+                {bio.source === "wikipedia"
+                  ? "Wikipedia"
+                  : bio.source === "dbpedia"
+                    ? "DBpedia"
+                    : "Wikidata"}
+              </a>
+            ) : (
+              <span>
+                {bio.source === "wikipedia"
+                  ? "Wikipedia"
+                  : bio.source === "dbpedia"
+                    ? "DBpedia"
+                    : "Wikidata"}
+              </span>
+            )}
+          </p>
+        </section>
+      )}
+
+      {provenance.length > 0 && (
+        <section>
+          <h2 className='text-[10px] font-bold uppercase tracking-[0.14em] text-muted'>
+            {dict.artist.dataSources}
+          </h2>
+          <div className='mt-2 flex flex-wrap gap-1.5'>
+            {provenance.map(([source, status]) => (
+              <SourceBadge key={source} source={source} status={status} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <ul className='grid grid-cols-3 divide-x divide-border border-y border-border'>
         {stats.map((stat) => (

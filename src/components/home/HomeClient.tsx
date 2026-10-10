@@ -9,14 +9,8 @@ import { WelcomeMessage } from "@/components/common/WelcomeMessage"
 import { Header } from "@/components/common/Header"
 import { sparqlService, type ArtistInfo } from "@/services/sparqlService"
 import { PROVIDERS, isProviderId, type ProviderId } from "@/services/providers"
+import type { SearchFilters } from "@/services/sparqlTypes"
 import type { Dictionary, Locale } from "@/dictionaries/getDictionary"
-
-interface SearchFilters {
-  genre?: string
-  decade?: string
-  country?: string
-  artistType?: "solo" | "band" | "composer"
-}
 
 interface HomeClientProps {
   dict: Dictionary

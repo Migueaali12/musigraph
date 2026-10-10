@@ -18,6 +18,19 @@ export function isAllowedDecade(value: unknown): value is string {
   return typeof value === "string" && /^(19|20)\d0$/.test(value)
 }
 
+export const MBID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isMbid(value: unknown): value is string {
+  return typeof value === "string" && MBID_PATTERN.test(value)
+}
+
+export const DISCOGS_ID_PATTERN = /^\d{1,12}$/
+
+export function isDiscogsId(value: unknown): value is string {
+  return typeof value === "string" && DISCOGS_ID_PATTERN.test(value)
+}
+
 export function isArtistType(value: unknown): value is "solo" | "band" | "composer" {
   return value === "solo" || value === "band" || value === "composer"
 }

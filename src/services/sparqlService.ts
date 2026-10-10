@@ -1,6 +1,12 @@
-import { fetchDiscographyFromMusicBrainz } from "./musicbrainzService"
-import type { SearchFilters } from "@/components/search/SearchBar"
+import type {
+  ArtistEnrichment,
+  ExternalIds,
+  SearchFilters,
+  SparqlBinding,
+  SparqlResponse,
+} from "./sparqlTypes"
 import type { Lang, ProviderId } from "./providers"
+import type { SourceId, SourceStatusMap } from "./sources"
 
 // ── Shared types (exported for consumers) ─────────────────────────────────
 
@@ -17,6 +23,11 @@ export interface ArtistInfo {
   popularity?: number
   instanceTypes: string[]
   occupations: string[]
+  externalIds?: ExternalIds
+  /** Which source produced this row (influences, search enrichments…). */
+  source?: SourceId
+  /** Relation flavour when the row comes from an influence query. */
+  relationType?: string
 }
 
 export interface AlbumInfo {
@@ -27,22 +38,30 @@ export interface AlbumInfo {
   genre?: string
   /** Localized release type label ("album", "single", "sencillo", …) */
   type?: string
+  /** Source that provided the release (badge in the discography). */
+  source?: SourceId
 }
 
 export interface CollaborationInfo {
-  work: string
+  work?: string
   workType?: "song" | "album"
   collaborator: string
   collaboratorId: string
   releaseDate?: string
+  source?: SourceId
 }
 
-interface SparqlBinding {
-  [key: string]: { value: string; type: string; "xml:lang"?: string }
+export interface ArtistEnrichmentResult {
+  enrichment?: ArtistEnrichment
+  sources?: SourceStatusMap
 }
 
-interface SparqlResponse {
-  results: { bindings: SparqlBinding[] }
+export interface DiscographyOptions {
+  mbid?: string
+  discogsId?: string
+  name?: string
+  /** Force the MusicBrainz-only discography view. */
+  source?: "musicbrainz"
 }
 
 // ── Request layer: in-flight dedupe + short-lived client cache ─────────────
@@ -127,6 +146,16 @@ function lastPathSegment(uri: string): string {
   return uri.split("/").pop() ?? ""
 }
 
+function readExternalIds(binding: SparqlBinding): ExternalIds | undefined {
+  const ids: ExternalIds = {}
+  if (binding.mbid?.value) ids.musicbrainz = binding.mbid.value
+  if (binding.discogsId?.value) ids.discogs = binding.discogsId.value
+  if (binding.spotifyId?.value) ids.spotify = binding.spotifyId.value
+  if (binding.lastfmId?.value) ids.lastfm = binding.lastfmId.value
+  if (binding.allmusicId?.value) ids.allmusic = binding.allmusicId.value
+  return Object.keys(ids).length > 0 ? ids : undefined
+}
+
 function processArtistResults(
   response: SparqlResponse,
   provider: ProviderId,
@@ -155,6 +184,7 @@ function processArtistResults(
         popularity: binding.sitelinks?.value ? Number(binding.sitelinks.value) : undefined,
         instanceTypes: [],
         occupations: [],
+        externalIds: readExternalIds(binding),
       })
     }
 
@@ -193,6 +223,14 @@ function processArtistResults(
     // Image fallbacks (first non-empty wins)
     if (!artist.image && binding.image?.value) {
       artist.image = binding.image.value
+    }
+
+    // Provenance / relation flavour (influence rows)
+    if (!artist.source && binding.source?.value) {
+      artist.source = binding.source.value as SourceId
+    }
+    if (!artist.relationType && binding.relationType?.value) {
+      artist.relationType = binding.relationType.value
     }
   })
 
@@ -272,6 +310,7 @@ function processAlbumResults(response: SparqlResponse, provider: ProviderId): Al
         label: binding.labelLabel?.value,
         genre: binding.genreLabel?.value,
         type: binding.albumTypeLabel?.value,
+        source: (binding.source?.value as SourceId | undefined) ?? (isDbpedia ? "dbpedia" : undefined),
       })
       continue
     }
@@ -290,6 +329,9 @@ function processAlbumResults(response: SparqlResponse, provider: ProviderId): Al
     if (!existing.type && binding.albumTypeLabel?.value) {
       existing.type = binding.albumTypeLabel.value
     }
+    if (!existing.source && binding.source?.value) {
+      existing.source = binding.source.value as SourceId
+    }
   }
 
   return [...albums.values()]
@@ -302,19 +344,21 @@ function processCollaborationResults(response: SparqlResponse): CollaborationInf
   for (const binding of response.results.bindings) {
     const workId = binding.work?.value ?? ""
     const collaboratorId = binding.collaborator?.value ?? ""
-    if (!workId || !collaboratorId) continue
+    if (!collaboratorId) continue
 
-    const key = `${workId}|${collaboratorId}`
+    // MusicBrainz collaboration relations have no work: key them by relation.
+    const key = `${workId || "relation"}|${collaboratorId}`
     if (seen.has(key)) continue
     seen.add(key)
 
     const workType = binding.workType?.value
     collaborations.push({
-      work: binding.workLabel?.value ?? lastPathSegment(workId),
+      work: workId ? binding.workLabel?.value ?? lastPathSegment(workId) : undefined,
       workType: workType === "album" ? "album" : workType === "song" ? "song" : undefined,
       collaborator: binding.collaboratorLabel?.value ?? lastPathSegment(collaboratorId),
       collaboratorId,
       releaseDate: binding.releaseDate?.value,
+      source: binding.source?.value as SourceId | undefined,
     })
   }
 
@@ -350,41 +394,58 @@ class SparqlService {
 
   async getArtistDiscography(
     artistId: string,
-    mbid?: string,
+    options: DiscographyOptions = {},
     provider: ProviderId = "wikidata",
     lang: Lang = "es"
   ): Promise<AlbumInfo[]> {
-    const response = await requestSparql("getArtistDiscography", { artistId }, provider, lang)
-    const albums = processAlbumResults(response, provider)
-
-    // Fallback to MusicBrainz when Wikidata/QLever returns nothing and mbid is known
-    if (albums.length === 0 && mbid && provider !== "dbpedia") {
-      try {
-        return await fetchDiscographyFromMusicBrainz(mbid)
-      } catch {
-        // MusicBrainz unavailable — return empty
-      }
-    }
-
-    return albums
+    const response = await requestSparql(
+      "getArtistDiscography",
+      {
+        artistId,
+        mbid: options.mbid,
+        discogsId: options.discogsId,
+        name: options.name,
+        source: options.source,
+      },
+      provider,
+      lang
+    )
+    return processAlbumResults(response, provider)
   }
 
   async getArtistInfluences(
     artistId: string,
     provider: ProviderId = "wikidata",
-    lang: Lang = "es"
+    lang: Lang = "es",
+    mbid?: string
   ): Promise<ArtistInfo[]> {
-    const response = await requestSparql("getArtistInfluences", { artistId }, provider, lang)
+    const response = await requestSparql("getArtistInfluences", { artistId, mbid }, provider, lang)
     return processArtistResults(response, provider)
   }
 
   async getCollaborations(
     artistId: string,
     provider: ProviderId = "wikidata",
-    lang: Lang = "es"
+    lang: Lang = "es",
+    mbid?: string
   ): Promise<CollaborationInfo[]> {
-    const response = await requestSparql("getCollaborations", { artistId }, provider, lang)
+    const response = await requestSparql("getCollaborations", { artistId, mbid }, provider, lang)
     return processCollaborationResults(response)
+  }
+
+  async getArtistEnrichment(
+    artistId: string,
+    provider: ProviderId = "auto",
+    lang: Lang = "es",
+    options: { mbid?: string } = {}
+  ): Promise<ArtistEnrichmentResult> {
+    const response = await requestSparql(
+      "getArtistEnrichment",
+      { artistId, mbid: options.mbid },
+      provider,
+      lang
+    )
+    return { enrichment: response.enrichment, sources: response.sources }
   }
 
   async searchByGenre(

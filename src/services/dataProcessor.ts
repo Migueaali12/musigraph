@@ -115,7 +115,8 @@ class DataProcessor {
   private sortCollaborationsByDate(
     collaborations: CollaborationInfo[]
   ): CollaborationInfo[] {
-    return collaborations.sort((a, b) => {
+    // Copy before sorting: the input array belongs to React state.
+    return [...collaborations].sort((a, b) => {
       const dateA = extractYear(a.releaseDate) ?? 0
       const dateB = extractYear(b.releaseDate) ?? 0
       return dateB - dateA // Most recent first

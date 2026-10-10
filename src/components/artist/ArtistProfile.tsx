@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   type ArtistInfo,
   type AlbumInfo,
   type CollaborationInfo,
+  type ArtistEnrichmentResult,
   sparqlService,
 } from "@/services/sparqlService"
 import {
@@ -19,8 +20,8 @@ import {
   Handshake,
   Lightbulb,
 } from "lucide-react"
-import { fetchDiscographyFromMusicBrainz } from "@/services/musicbrainzService"
 import { getInitials, stripColon } from "@/utils/format"
+import { getExternalLinks } from "@/utils/externalLinks"
 import { extractYear } from "@/utils/date"
 import { PROVIDERS, type ProviderId } from "@/services/providers"
 import { Select, type SelectOption } from "@/components/common/Select"
@@ -87,6 +88,7 @@ export function ArtistProfile({
   const [discography, setDiscography] = useState<AlbumInfo[]>([])
   const [influences, setInfluences] = useState<ArtistInfo[]>([])
   const [collaborations, setCollaborations] = useState<CollaborationInfo[]>([])
+  const [enrichment, setEnrichment] = useState<ArtistEnrichmentResult>({})
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>("overview")
   const [imageError, setImageError] = useState(false)
@@ -100,24 +102,49 @@ export function ArtistProfile({
     const loadData = async () => {
       setIsLoading(true)
       try {
+        // Bio/members/genres arrive independently: never block the tabs on them.
+        const enrichmentPromise = sparqlService
+          .getArtistEnrichment(artist.id, provider, locale, { mbid: artist.mbid })
+          .catch(() => ({}) as ArtistEnrichmentResult)
+
         if (detailSource === "musicbrainz" && artist.mbid) {
-          const mbDiscography = await fetchDiscographyFromMusicBrainz(artist.mbid)
+          const [mbDiscography, enrichmentData] = await Promise.all([
+            sparqlService.getArtistDiscography(
+              artist.id,
+              { mbid: artist.mbid, source: "musicbrainz" },
+              provider,
+              locale
+            ),
+            enrichmentPromise,
+          ])
           if (!cancelled) {
             setDiscography(mbDiscography)
             setInfluences([])
             setCollaborations([])
+            setEnrichment(enrichmentData)
           }
         } else {
-          const [discographyData, influencesData, collaborationsData] =
+          const [discographyData, influencesData, collaborationsData, enrichmentData] =
             await Promise.all([
-              sparqlService.getArtistDiscography(artist.id, artist.mbid, provider, locale),
-              sparqlService.getArtistInfluences(artist.id, provider, locale),
-              sparqlService.getCollaborations(artist.id, provider, locale),
+              sparqlService.getArtistDiscography(
+                artist.id,
+                {
+                  mbid: artist.mbid,
+                  discogsId: artist.externalIds?.discogs,
+                  name: artist.name,
+                },
+                provider,
+                locale
+              ),
+              sparqlService.getArtistInfluences(artist.id, provider, locale, artist.mbid),
+              sparqlService.getCollaborations(artist.id, provider, locale, artist.mbid),
+              enrichmentPromise,
             ])
           if (!cancelled) {
             setDiscography(discographyData)
             setInfluences(influencesData)
             setCollaborations(collaborationsData)
+            setEnrichment(enrichmentData)
           }
         }
       } catch {
@@ -129,13 +156,43 @@ export function ArtistProfile({
 
     loadData()
     return () => { cancelled = true }
-  }, [artist.id, artist.mbid, provider, locale, detailSource])
+  }, [
+    artist.id,
+    artist.mbid,
+    artist.name,
+    artist.externalIds?.discogs,
+    provider,
+    locale,
+    detailSource,
+  ])
 
-  const processedData: ProcessedArtistData = dataProcessor.processArtistData(
-    artist,
-    discography,
-    influences,
-    collaborations
+  const processedData: ProcessedArtistData = useMemo(
+    () =>
+      dataProcessor.processArtistData(
+        artist,
+        discography,
+        influences,
+        collaborations
+      ),
+    [artist, discography, influences, collaborations]
+  )
+
+  // Wikidata genres ∪ MusicBrainz genres/tags (case-insensitive dedupe).
+  const genres = useMemo(() => {
+    const seen = new Set<string>()
+    const list: string[] = []
+    for (const genre of [...artist.genres, ...(enrichment.enrichment?.genres ?? [])]) {
+      const key = genre.trim().toLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      list.push(genre)
+    }
+    return list
+  }, [artist.genres, enrichment.enrichment?.genres])
+
+  const externalLinks = useMemo(
+    () => getExternalLinks(artist.externalIds),
+    [artist.externalIds]
   )
 
   const birthYear = extractYear(artist.birthDate)
@@ -250,17 +307,36 @@ export function ArtistProfile({
             )}
           </dl>
 
-          {artist.genres.length > 0 && (
+          {genres.length > 0 && (
             <div className='mt-6'>
               <h2 className={metaLabelClass}>{dict.artist.musicalGenres}</h2>
               <div className='mt-2 flex flex-wrap gap-1.5'>
-                {artist.genres.map((genre, index) => (
+                {genres.map((genre, index) => (
                   <span
                     key={index}
                     className='chip border-accent/20 bg-accent-soft text-accent'
                   >
                     {genre}
                   </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {externalLinks.length > 0 && (
+            <div className='mt-6'>
+              <h2 className={metaLabelClass}>{dict.artist.externalLinks}</h2>
+              <div className='mt-2 flex flex-wrap gap-1.5'>
+                {externalLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='chip border-border bg-surface text-muted hover:text-accent'
+                  >
+                    {link.label}
+                  </a>
                 ))}
               </div>
             </div>
@@ -310,7 +386,13 @@ export function ArtistProfile({
         ) : (
           <>
             {activeTab === "overview" && (
-              <OverviewTab artist={artist} processedData={processedData} dict={dict} />
+              <OverviewTab
+                artist={artist}
+                processedData={processedData}
+                bio={enrichment.enrichment?.bio}
+                sources={enrichment.sources}
+                dict={dict}
+              />
             )}
             {activeTab === "discography" && (
               <DiscographyTab discography={processedData.discography} dict={dict} />

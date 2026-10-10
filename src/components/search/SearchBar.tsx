@@ -4,13 +4,10 @@ import { useState } from "react"
 import { FilterPanel } from "./FilterPanel"
 import { Search, SlidersHorizontal } from "lucide-react"
 import type { Dictionary } from "@/dictionaries/getDictionary"
+import type { SearchFilters } from "@/services/sparqlTypes"
 
-export interface SearchFilters {
-  genre?: string
-  decade?: string
-  country?: string
-  artistType?: "solo" | "band" | "composer"
-}
+// Re-exported for consumers that historically imported the type from here.
+export type { SearchFilters }
 
 interface SearchBarProps {
   onSearch: (term: string, filters: SearchFilters) => void

@@ -1,5 +1,6 @@
 import { Lightbulb } from "lucide-react"
 import type { ArtistInfo } from "@/services/sparqlService"
+import { SourceBadge } from "@/components/common/SourceBadge"
 import type { Dictionary } from "@/dictionaries/getDictionary"
 import { TabEmpty } from "./TabEmpty"
 
@@ -26,7 +27,10 @@ export function InfluencesTab({ influences, dict }: InfluencesTabProps) {
           key={influence.id || index}
           className='rounded-md border border-border p-4 transition-colors hover:border-accent/40'
         >
-          <h4 className='text-sm font-bold'>{influence.name}</h4>
+          <div className='flex items-start justify-between gap-2'>
+            <h4 className='text-sm font-bold'>{influence.name}</h4>
+            {influence.source && <SourceBadge source={influence.source} />}
+          </div>
           {influence.country && (
             <p className='mt-1 text-[13px] text-muted'>{influence.country}</p>
           )}
