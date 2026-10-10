@@ -19,7 +19,9 @@
 **Commits:**
 - `27acad8` — Fase 0 + Fase 1 completas (en `feat/data-enrichment`).
 - `0e7c880` — fix de claves duplicadas en discografía (en `feat/data-enrichment`, **sin pushear**).
-- `9984d6f` — upgrade a Next.js 16.4 (en `feat/data-enrichment`, **sin pushear**).
+- `9984d6f` — upgrade a Next.js 16.4 (en `feat/data-enrichment`, **pusheado**).
+- `ef18d1a` — Fase 4: página de metodología (en `feat/data-enrichment`, **pusheado**).
+- `bc1d44e` — Fase 5: v2 readiness, monitoreo y fixes del suite (en `feat/data-enrichment`, **sin pushear**).
 - `main` fue restaurado a `596595f` (el commit accidental se movió a la rama con force-push).
 
 ---
@@ -362,12 +364,13 @@ Acciones actuales: `searchArtist`, `getArtistDiscography`, `getArtistInfluences`
 
 ```
 feat/data-enrichment (actual, upstream configurado)
-  ├─ Fase 4 completa (ver §8) + upgrade Next 16  [sin pushear]
-  ├─ 9984d6f chore(deps): upgrade to Next.js 16
-  ├─ e976d17 feat(ui): auto mode by default with progressive profile rendering [pusheado]
-  ├─ 03f84a4 feat(enrichment): multi-source auto mode with provenance      [pusheado]
-  ├─ 0e7c880 fix(discography): dedupe releases to avoid duplicate React keys  [pusheado]
-  └─ 27acad8 feat: add featured artist IDs and remove unused SPARQL queries   [pusheado]
+  ├─ bc1d44e feat(monitoring): phase 5 WDQS v2 readiness and endpoint monitoring  [sin pushear]
+  ├─ ef18d1a feat(data): complete methodology page with flow diagram              [pusheado]
+  ├─ 9984d6f chore(deps): upgrade to Next.js 16                                   [pusheado]
+  ├─ e976d17 feat(ui): auto mode by default with progressive profile rendering     [pusheado]
+  ├─ 03f84a4 feat(enrichment): multi-source auto mode with provenance              [pusheado]
+  ├─ 0e7c880 fix(discography): dedupe releases to avoid duplicate React keys       [pusheado]
+  └─ 27acad8 feat: add featured artist IDs and remove unused SPARQL queries        [pusheado]
 
 main = 596595f (restaurado, force-push a origin)
 ```
