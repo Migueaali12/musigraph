@@ -2,17 +2,23 @@
 
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import { useSystemPrefersDark } from "@/hooks/useSystemPrefersDark"
+
+// Client-only flag without a setState-in-effect round trip: the server snapshot
+// is false (placeholder icon), the client snapshot is true (interactive).
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
   const systemPrefersDark = useSystemPrefersDark()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  )
 
   if (!mounted) {
     return (

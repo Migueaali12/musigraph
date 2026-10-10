@@ -38,6 +38,9 @@ export function Header({
   const handleLanguageChange = (newLocale: string) => {
     if (newLocale === locale) return
     const pathWithoutLocale = pathname.replace(/^\/(en|es)/, "") || "/"
+    // Full reload on purpose: it resets client state (search results, selected
+    // artist) so the whole UI switches language consistently.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/${newLocale}${pathWithoutLocale}`
   }
 

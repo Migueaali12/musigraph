@@ -1,18 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
+
+const QUERY = "(prefers-color-scheme: dark)"
+
+let mediaQueryList: MediaQueryList | null = null
+function getMediaQueryList(): MediaQueryList {
+  if (!mediaQueryList) mediaQueryList = window.matchMedia(QUERY)
+  return mediaQueryList
+}
+
+function subscribe(onStoreChange: () => void) {
+  const mql = getMediaQueryList()
+  mql.addEventListener("change", onStoreChange)
+  return () => mql.removeEventListener("change", onStoreChange)
+}
 
 export function useSystemPrefersDark() {
-  const [prefersDark, setPrefersDark] = useState(false)
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)")
-    setPrefersDark(mq.matches)
-
-    const onChange = (e: MediaQueryListEvent) => setPrefersDark(e.matches)
-    mq.addEventListener("change", onChange)
-    return () => mq.removeEventListener("change", onChange)
-  }, [])
-
-  return prefersDark
+  return useSyncExternalStore(
+    subscribe,
+    () => getMediaQueryList().matches,
+    () => false
+  )
 }

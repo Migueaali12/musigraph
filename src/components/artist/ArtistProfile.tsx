@@ -107,16 +107,6 @@ export function ArtistProfile({
   useEffect(() => {
     let cancelled = false
 
-    // Reset previous artist data so a failed section never shows stale rows.
-    setDiscography([])
-    setInfluences([])
-    setCollaborations([])
-    setEnrichment({})
-    setDiscographyStatus("loading")
-    setInfluencesStatus("loading")
-    setCollaborationsStatus("loading")
-    setEnrichmentStatus("loading")
-
     const settle = <T,>(
       promise: Promise<T>,
       apply: (value: T) => void,
@@ -142,8 +132,6 @@ export function ArtistProfile({
     )
 
     if (detailSource === "musicbrainz" && artist.mbid) {
-      setInfluencesStatus("ready")
-      setCollaborationsStatus("ready")
       settle(
         sparqlService.getArtistDiscography(
           artist.id,
@@ -226,6 +214,24 @@ export function ArtistProfile({
   const birthYear = extractYear(artist.birthDate)
   const canShowMusicBrainz = Boolean(artist.mbid)
 
+  const handleDetailSourceChange = (value: string) => {
+    const next: "endpoint" | "musicbrainz" =
+      value === "musicbrainz" ? "musicbrainz" : "endpoint"
+    if (next === detailSource) return
+
+    setDetailSource(next)
+    // Swapping the detail source swaps the dataset: reset it here (event
+    // handler) instead of inside the fetching effect. The MusicBrainz view
+    // only serves a discography, so relations are marked ready but empty.
+    const sectionsReady = next === "musicbrainz"
+    setDiscography([])
+    setInfluences([])
+    setCollaborations([])
+    setDiscographyStatus("loading")
+    setInfluencesStatus(sectionsReady ? "ready" : "loading")
+    setCollaborationsStatus(sectionsReady ? "ready" : "loading")
+  }
+
   const sourceOptions: SelectOption[] = [
     {
       value: "endpoint",
@@ -264,9 +270,7 @@ export function ArtistProfile({
           <Select
             id='data-source'
             value={detailSource}
-            onChange={(value) =>
-              setDetailSource(value as "endpoint" | "musicbrainz")
-            }
+            onChange={handleDetailSourceChange}
             options={sourceOptions}
             disabled={!canShowMusicBrainz}
             align='right'

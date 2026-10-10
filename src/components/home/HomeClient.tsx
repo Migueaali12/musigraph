@@ -84,6 +84,7 @@ export function HomeClient({ dict, locale }: HomeClientProps) {
       {selectedArtist ? (
         <main className='mx-auto max-w-6xl px-4 py-10 sm:px-6'>
           <ArtistProfile
+            key={selectedArtist.id}
             artist={selectedArtist}
             onBack={handleBack}
             provider={provider}
